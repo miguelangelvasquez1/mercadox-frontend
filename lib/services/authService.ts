@@ -15,7 +15,7 @@ export const authService = {
   async login(credentials: LoginRequest): Promise<LoginResponse> {
     const response = await apiClient.post<LoginResponse>('/auth/login', credentials);
     if (typeof window !== 'undefined') {
-      localStorage.setItem('mercadox_token', response.access_token);
+      localStorage.setItem('mercadox_token', response.accessToken);
     }
     return response;
   },
@@ -32,27 +32,6 @@ export const authService = {
         localStorage.removeItem('mercadox_refresh_token');
       }
     }
-  },
-
-  /**
-   * Send password recovery email
-   */
-  async recoverPassword(payload: RecoverPasswordRequest): Promise<RecoverPasswordResponse> {
-    return apiClient.post<RecoverPasswordResponse>('/auth/recover-password', payload);
-  },
-
-  /**
-   * Reset password with token from email
-   */
-  async resetPassword(payload: ResetPasswordRequest): Promise<{ message: string }> {
-    return apiClient.post('/auth/reset-password', payload);
-  },
-
-  /**
-   * Get current authenticated user
-   */
-  async me(): Promise<User> {
-    return apiClient.get<User>('/auth/me');
   },
 
   /**
