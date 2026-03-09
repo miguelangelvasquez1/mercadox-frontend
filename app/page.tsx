@@ -1,458 +1,695 @@
 'use client';
 
 import Link from 'next/link';
-import { useState, useEffect, CSSProperties } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { productService } from '@/lib/services/productService';
+import type { ProductCategory, ProductSummary } from '@/lib/types/product.types';
 
-// ─── Design tokens ────────────────────────────────────────────────────────────
 const T = {
-  bg:          '#07080f',
-  surface:     '#0e101c',
-  surface2:    '#151825',
-  border:      'rgba(255,255,255,0.06)',
+  bg: '#07080f',
+  surface: '#0e101c',
+  surface2: '#151825',
+  border: 'rgba(255,255,255,0.06)',
   borderHover: 'rgba(255,107,43,0.35)',
-  accent:      '#ff6b2b',
-  accentSoft:  '#ff8c52',
-  green:       '#22d87a',
-  text:        '#eef0f8',
-  muted:       '#6b7291',
-  faint:       'rgba(238,240,248,0.04)',
+  accent: '#ff6b2b',
+  accentSoft: '#ff9d5c',
+  green: '#22d87a',
+  text: '#eef0f8',
+  muted: '#6b7291',
+  faint: 'rgba(238,240,248,0.04)',
   fontDisplay: '"Syne", system-ui, sans-serif',
-  fontBody:    '"DM Sans", system-ui, sans-serif',
-  fontMono:    '"JetBrains Mono", monospace',
+  fontBody: '"DM Sans", system-ui, sans-serif',
 };
 
-// ─── Injected <style> ─────────────────────────────────────────────────────────
 const STYLES = `
-  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap');
-  @keyframes mx-float {
-    0%,100%{transform:translateY(0)} 50%{transform:translateY(-14px)}
-  }
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=DM+Sans:wght@400;500;600;700&display=swap');
+
   @keyframes mx-up {
-    from{opacity:0;transform:translateY(26px)} to{opacity:1;transform:translateY(0)}
-  }
-  @keyframes mx-pulse {
-    0%,100%{opacity:1} 50%{opacity:.35}
+    from { opacity: 0; transform: translateY(26px); }
+    to   { opacity: 1; transform: translateY(0); }
   }
 
-  .mx-f1{animation:mx-up .65s .00s ease both}
-  .mx-f2{animation:mx-up .65s .12s ease both}
-  .mx-f3{animation:mx-up .65s .22s ease both}
-  .mx-f4{animation:mx-up .65s .32s ease both}
-  .mx-f5{animation:mx-up .65s .44s ease both}
-  .mx-float{animation:mx-float 7s ease-in-out infinite}
-  .mx-dot{animation:mx-pulse 2s ease-in-out infinite}
+  @keyframes mx-float {
+    0%,100% { transform: translateY(0); }
+    50%     { transform: translateY(-10px); }
+  }
 
-  .mx-grad{background:linear-gradient(120deg,#ff6b2b 0%,#ff9d5c 45%,#ffcc80 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+  .mx-f1 { animation: mx-up .55s .00s ease both; }
+  .mx-f2 { animation: mx-up .55s .10s ease both; }
+  .mx-f3 { animation: mx-up .55s .18s ease both; }
+  .mx-f4 { animation: mx-up .55s .26s ease both; }
 
-  .mx-card{background:${T.surface};border:1px solid ${T.border};border-radius:18px;transition:border-color .25s,box-shadow .25s,transform .25s}
-  .mx-card:hover{border-color:${T.borderHover};box-shadow:0 24px 60px rgba(0,0,0,.45);transform:translateY(-3px)}
+  .mx-float { animation: mx-float 6s ease-in-out infinite; }
 
-  .mx-cat{background:${T.surface};border:1px solid ${T.border};border-radius:16px;padding:22px 14px;text-align:center;cursor:pointer;text-decoration:none;display:block;transition:all .25s}
-  .mx-cat:hover{border-color:rgba(255,107,43,.3);background:${T.surface2};transform:translateY(-4px);box-shadow:0 16px 40px rgba(0,0,0,.4)}
+  .mx-grad {
+    background: linear-gradient(120deg,#ff6b2b 0%,#ff9d5c 45%,#ffc17a 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
 
-  .mx-primary{position:relative;overflow:hidden;display:inline-flex;align-items:center;justify-content:center;gap:7px;font-family:${T.fontDisplay};font-weight:700;font-size:14px;letter-spacing:.01em;padding:13px 26px;border-radius:13px;border:none;cursor:pointer;color:#fff;background:linear-gradient(135deg,#ff6b2b,#ff9d5c);transition:box-shadow .25s,transform .2s;text-decoration:none;white-space:nowrap}
-  .mx-primary::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,transparent,rgba(255,255,255,.14));opacity:0;transition:opacity .25s}
-  .mx-primary:hover{box-shadow:0 8px 32px rgba(255,107,43,.45);transform:translateY(-1px)}
-  .mx-primary:hover::after{opacity:1}
-  .mx-primary:active{transform:translateY(0)}
+  .mx-nav-link {
+    color: ${T.muted};
+    font-size: 14px;
+    font-weight: 500;
+    text-decoration: none;
+    transition: color .2s;
+  }
+  .mx-nav-link:hover {
+    color: ${T.text};
+  }
 
-  .mx-ghost{display:inline-flex;align-items:center;justify-content:center;font-family:${T.fontDisplay};font-weight:600;font-size:14px;padding:12px 22px;border-radius:13px;border:1px solid ${T.border};cursor:pointer;color:${T.muted};background:transparent;transition:all .2s;text-decoration:none;white-space:nowrap}
-  .mx-ghost:hover{border-color:rgba(255,107,43,.35);color:${T.text};background:rgba(255,107,43,.06)}
+  .mx-stat-card {
+    background: ${T.surface};
+    border: 1px solid ${T.border};
+    border-radius: 18px;
+    padding: 18px;
+    transition: border-color .25s, transform .25s, box-shadow .25s;
+  }
+  .mx-stat-card:hover {
+    border-color: ${T.borderHover};
+    transform: translateY(-2px);
+    box-shadow: 0 20px 50px rgba(0,0,0,.35);
+  }
 
-  .mx-input{width:100%;background:${T.surface2};border:1px solid ${T.border};border-radius:12px;padding:13px 18px;color:${T.text};font-family:${T.fontBody};font-size:15px;outline:none;transition:border-color .2s,box-shadow .2s}
-  .mx-input::placeholder{color:${T.muted}}
-  .mx-input:focus{border-color:rgba(255,107,43,.5);box-shadow:0 0 0 3px rgba(255,107,43,.1)}
+  .mx-cat-card {
+    background: ${T.surface};
+    border: 1px solid ${T.border};
+    border-radius: 18px;
+    padding: 18px;
+    text-decoration: none;
+    transition: border-color .25s, transform .25s, box-shadow .25s;
+    display: block;
+  }
+  .mx-cat-card:hover {
+    border-color: ${T.borderHover};
+    transform: translateY(-3px);
+    box-shadow: 0 20px 50px rgba(0,0,0,.35);
+  }
 
-  .mx-nav-a{color:${T.muted};font-size:14px;font-weight:500;text-decoration:none;transition:color .2s}
-  .mx-nav-a:hover{color:${T.text}}
+  .mx-product-card {
+    background: ${T.surface};
+    border: 1px solid ${T.border};
+    border-radius: 20px;
+    padding: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    transition: border-color .25s, transform .25s, box-shadow .25s;
+  }
+  .mx-product-card:hover {
+    border-color: ${T.borderHover};
+    transform: translateY(-3px);
+    box-shadow: 0 20px 50px rgba(0,0,0,.35);
+  }
 
-  .mx-flink{color:${T.muted};font-size:13px;text-decoration:none;display:block;margin-bottom:10px;transition:color .2s}
-  .mx-flink:hover{color:${T.accentSoft}}
+  .mx-empty {
+    background: ${T.surface};
+    border: 1px solid ${T.border};
+    border-radius: 18px;
+    padding: 24px;
+    text-align: center;
+    color: ${T.muted};
+  }
 
-  .mx-badge-hot{background:#ff6b2b;color:#fff}
-  .mx-badge-new{background:#22d87a;color:#fff}
-  .mx-badge-sale{background:#4f8cff;color:#fff}
+  .mx-skeleton {
+    background: linear-gradient(90deg, rgba(255,255,255,.03), rgba(255,255,255,.08), rgba(255,255,255,.03));
+    background-size: 200% 100%;
+    animation: mx-shimmer 1.2s infinite linear;
+  }
+
+  @keyframes mx-shimmer {
+    from { background-position: 200% 0; }
+    to   { background-position: -200% 0; }
+  }
+
+  .mx-grid-4 {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 18px;
+  }
+
+  .mx-grid-3 {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+  }
+
+  .mx-grid-6 {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 14px;
+  }
+
+  @media (max-width: 1100px) {
+    .mx-grid-6 { grid-template-columns: repeat(3, 1fr); }
+    .mx-grid-4 { grid-template-columns: repeat(2, 1fr); }
+    .mx-grid-3 { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  @media (max-width: 720px) {
+    .mx-hide-mobile { display: none !important; }
+    .mx-grid-6,
+    .mx-grid-4,
+    .mx-grid-3 { grid-template-columns: 1fr; }
+  }
 `;
 
-// ─── Data ─────────────────────────────────────────────────────────────────────
-const CATS = [
-  { name:'Videojuegos', icon:'🎮', count:'2,400+', c:'#4f8cff' },
-  { name:'Gift Cards',   icon:'🎁', count:'890+',   c:'#ff6b2b' },
-  { name:'Streaming',    icon:'📺', count:'150+',   c:'#e91e8c' },
-  { name:'Software',     icon:'💻', count:'680+',   c:'#22d87a' },
-  { name:'VPN & Privacidad', icon:'🔒', count:'120+', c:'#f5c518' },
-  { name:'Créditos',     icon:'💰', count:'340+',   c:'#a78bfa' },
-];
+function formatCurrency(value: number) {
+  return new Intl.NumberFormat('es-CO', {
+    style: 'currency',
+    currency: 'COP',
+    maximumFractionDigits: 0,
+  }).format(value);
+}
 
-const PRODS = [
-  { name:'Xbox Game Pass Ultimate', plat:'Microsoft',  price:'$12.99', old:'$19.99', badge:'HOT',   bc:'mx-badge-hot',  e:'🎮', a:'#107C10' },
-  { name:'PlayStation Plus Premium',plat:'Sony',       price:'$17.99', old:'',       badge:'NUEVO', bc:'mx-badge-new',  e:'🕹️', a:'#003791' },
-  { name:'Netflix 4K Premium',      plat:'Netflix',    price:'$8.50',  old:'$15.99', badge:'OFERTA',bc:'mx-badge-sale', e:'📺', a:'#e50914' },
-  { name:'Spotify Premium 3M',      plat:'Spotify',    price:'$5.99',  old:'',       badge:'',      bc:'',              e:'🎵', a:'#1db954' },
-  { name:'Steam Wallet $50',        plat:'Valve',      price:'$48.00', old:'',       badge:'HOT',   bc:'mx-badge-hot',  e:'🎲', a:'#1b2838' },
-  { name:'Nintendo eShop $20',      plat:'Nintendo',   price:'$19.50', old:'$20.00', badge:'',      bc:'',              e:'🍄', a:'#e4000f' },
-];
+function getInitials(text: string) {
+  return text
+    .split(' ')
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((word) => word[0]?.toUpperCase() ?? '')
+    .join('');
+}
 
-const STATS = [
-  { v:'250K+',  l:'Clientes activos',  icon:'👥' },
-  { v:'98.7%',  l:'Satisfacción',      icon:'⭐' },
-  { v:'<2 min', l:'Entrega promedio',  icon:'⚡' },
-  { v:'4.2M+',  l:'Códigos vendidos',  icon:'🔑' },
-];
-
-const STEPS = [
-  { n:'01', icon:'🔍', t:'Elige tu producto',     d:'Explora miles de gift cards, suscripciones y juegos de las mejores plataformas del mundo.' },
-  { n:'02', icon:'💳', t:'Paga de forma segura',  d:'Tarjeta, PayPal, criptomonedas y más. Encriptación SSL de extremo a extremo.' },
-  { n:'03', icon:'📨', t:'Recibe tu código',       d:'Tu código llega al instante a tu correo y perfil. Listo para activar.' },
-];
-
-const REVIEWS = [
-  { name:'María García',   h:'@mariadev',  t:'Compré un código de Netflix y lo recibí en 30 segundos. La plataforma más rápida que he usado. ¡Increíble!',                       s:5 },
-  { name:'Carlos Mendoza', h:'@carlosh_g', t:'Ya llevo 6 meses comprando aquí. Precios excelentes, entrega inmediata y el soporte responde en minutos.',                         s:5 },
-  { name:'Ana Rodríguez',  h:'@anarodz',   t:'Tuve un problema con un código y el soporte lo resolvió de inmediato. Confianza total. Ya no compro en otro lado.',               s:5 },
-];
-
-// ─── Component ────────────────────────────────────────────────────────────────
-export default function LandingPage() {
-  const [menuOpen,   setMenuOpen]   = useState(false);
-  const [email,      setEmail]      = useState('');
-  const [subOk,      setSubOk]      = useState(false);
-  const [hovered,    setHovered]    = useState<number | null>(null);
-  const [mobile,     setMobile]     = useState(false);
+export default function HomePage() {
+  const [categories, setCategories] = useState<ProductCategory[]>([]);
+  const [featuredProducts, setFeaturedProducts] = useState<ProductSummary[]>([]);
+  const [totalProducts, setTotalProducts] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    const fn = () => setMobile(window.innerWidth < 768);
-    fn(); window.addEventListener('resize', fn);
-    return () => window.removeEventListener('resize', fn);
+    const loadLandingData = async () => {
+      try {
+        setLoading(true);
+        setError('');
+
+        const [categoriesResponse, productsResponse] = await Promise.all([
+          productService.getCategories(),
+          productService.getProducts(0),
+        ]);
+
+        setCategories(categoriesResponse);
+        setFeaturedProducts(productsResponse.content.slice(0, 6));
+        setTotalProducts(productsResponse.totalElements);
+      } catch (err: unknown) {
+        const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
+        setError(msg || 'No fue posible cargar la información principal.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    void loadLandingData();
   }, []);
 
-  /* --- common helpers --- */
-  const grid = (cols: string): CSSProperties => ({ display:'grid', gridTemplateColumns:cols, gap:18 });
-  const row  = (gap=12): CSSProperties => ({ display:'flex', alignItems:'center', gap });
-  const col  = (gap=0): CSSProperties  => ({ display:'flex', flexDirection:'column', gap });
+  const stats = useMemo(() => {
+    const withStock = featuredProducts.filter((product) => product.stock > 0).length;
+    const highestPrice = featuredProducts.length > 0
+      ? Math.max(...featuredProducts.map((product) => Number(product.price)))
+      : 0;
 
-  const pageStyle: CSSProperties = {
-    background:T.bg, color:T.text, fontFamily:T.fontBody,
-    minHeight:'100vh', WebkitFontSmoothing:'antialiased' as const,
-  };
+    return [
+      {
+        label: 'Productos cargados',
+        value: totalProducts > 0 ? String(totalProducts) : '0',
+      },
+      {
+        label: 'Categorías activas',
+        value: String(categories.length),
+      },
+      {
+        label: 'Destacados con stock',
+        value: String(withStock),
+      },
+      {
+        label: 'Precio más alto visible',
+        value: highestPrice > 0 ? formatCurrency(highestPrice) : '$0',
+      },
+    ];
+  }, [categories.length, featuredProducts, totalProducts]);
 
   return (
-    <div style={pageStyle}>
+    <div
+      style={{
+        minHeight: '100vh',
+        background: T.bg,
+        color: T.text,
+        fontFamily: T.fontBody,
+        WebkitFontSmoothing: 'antialiased',
+      }}
+    >
       <style>{STYLES}</style>
 
-      {/* ═══ NAV ═══ */}
-      <nav style={{
-        position:'sticky', top:0, zIndex:100,
-        background:'rgba(7,8,15,0.84)', backdropFilter:'blur(24px)',
-        WebkitBackdropFilter:'blur(24px)', borderBottom:`1px solid ${T.border}`,
-      }}>
-        <div style={{ maxWidth:1200, margin:'0 auto', padding:'0 24px', ...row(), justifyContent:'space-between', height:64 }}>
-          {/* Logo */}
-          <Link href="/" style={{ ...row(10), textDecoration:'none' }}>
-            <div style={{ width:36, height:36, borderRadius:10, background:'linear-gradient(135deg,#ff6b2b,#ff9d5c)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:16, fontWeight:900, color:'#fff', fontFamily:T.fontDisplay, flexShrink:0 }}>M</div>
-            <span style={{ fontFamily:T.fontDisplay, fontWeight:800, fontSize:19, color:T.text }}>Mercadox</span>
+      <nav
+        style={{
+          position: 'sticky',
+          top: 0,
+          zIndex: 100,
+          backdropFilter: 'blur(20px)',
+          WebkitBackdropFilter: 'blur(20px)',
+          background: 'rgba(7,8,15,0.84)',
+          borderBottom: `1px solid ${T.border}`,
+        }}
+      >
+        <div
+          style={{
+            maxWidth: 1200,
+            margin: '0 auto',
+            padding: '0 20px',
+            height: 68,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            gap: 16,
+          }}
+        >
+          <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
+            <div
+              style={{
+                width: 38,
+                height: 38,
+                borderRadius: 11,
+                background: 'linear-gradient(135deg,#ff6b2b,#ff9d5c)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#fff',
+                fontWeight: 900,
+                fontFamily: T.fontDisplay,
+              }}
+            >
+              M
+            </div>
+            <span style={{ fontFamily: T.fontDisplay, fontWeight: 800, fontSize: 20, color: T.text }}>
+              Mercadox
+            </span>
           </Link>
 
-          {/* Desktop */}
-          {!mobile && (
-            <div style={row(32)}>
-              {['Productos','Categorías','Vendedores','Soporte'].map(l=>(
-                <a key={l} href="#" className="mx-nav-a">{l}</a>
-              ))}
-            </div>
-          )}
-          {!mobile && (
-            <div style={row(10)}>
-              <Link href="/login" className="mx-ghost" style={{padding:'10px 20px'}}>Iniciar sesión</Link>
-              <Link href="/login" className="mx-primary" style={{padding:'10px 22px'}}>Registrarse →</Link>
-            </div>
-          )}
-
-          {/* Hamburger */}
-          {mobile && (
-            <button onClick={()=>setMenuOpen(!menuOpen)} style={{ background:'none', border:'none', cursor:'pointer', ...col(5), padding:8 }}>
-              {[0,1,2].map(i=>(
-                <span key={i} style={{ display:'block', width:22, height:2, background:T.muted, borderRadius:2, transition:'all .3s',
-                  transform: menuOpen&&i===0?'rotate(45deg) translate(4px,5px)': menuOpen&&i===2?'rotate(-45deg) translate(4px,-5px)':'none',
-                  opacity: menuOpen&&i===1?0:1,
-                }}/>
-              ))}
-            </button>
-          )}
-        </div>
-
-        {/* Mobile menu */}
-        {mobile && menuOpen && (
-          <div style={{ background:T.surface, borderTop:`1px solid ${T.border}`, padding:'16px 20px', ...col(4) }}>
-            {['Productos','Categorías','Vendedores','Soporte'].map(l=>(
-              <a key={l} href="#" style={{ color:T.muted, fontWeight:500, padding:'10px 0', fontSize:15, textDecoration:'none', borderBottom:`1px solid ${T.border}` }}>{l}</a>
-            ))}
-            <div style={{ ...col(10), paddingTop:14 }}>
-              <Link href="/login" className="mx-ghost" style={{textAlign:'center'}}>Iniciar sesión</Link>
-              <Link href="/login" className="mx-primary" style={{textAlign:'center'}}>Registrarse gratis →</Link>
-            </div>
+          <div className="mx-hide-mobile" style={{ display: 'flex', alignItems: 'center', gap: 28 }}>
+            <a href="#categorias" className="mx-nav-link">Categorías</a>
+            <a href="#destacados" className="mx-nav-link">Destacados</a>
+            <Link href="/products" className="mx-nav-link">Productos</Link>
           </div>
-        )}
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <Link href="/login" className="btn-ghost" style={{ textDecoration: 'none' }}>
+              Iniciar sesión
+            </Link>
+            <Link href="/products" className="btn-primary" style={{ textDecoration: 'none' }}>
+              <span>Explorar</span>
+            </Link>
+          </div>
+        </div>
       </nav>
 
-      {/* ═══ HERO ═══ */}
-      <section style={{ position:'relative', overflow:'hidden', padding: mobile?'60px 20px 80px':'90px 24px 110px' }}>
-        {/* orbs */}
-        <div style={{ position:'absolute', top:-200, right:-200, width:700, height:700, borderRadius:'50%', background:'radial-gradient(circle,rgba(255,107,43,.13) 0%,transparent 65%)', pointerEvents:'none' }}/>
-        <div style={{ position:'absolute', bottom:-300, left:-150, width:600, height:600, borderRadius:'50%', background:'radial-gradient(circle,rgba(79,140,255,.07) 0%,transparent 65%)', pointerEvents:'none' }}/>
-        {/* grid pattern */}
-        <div style={{ position:'absolute', inset:0, backgroundImage:`linear-gradient(rgba(255,255,255,.018) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px)`, backgroundSize:'60px 60px', pointerEvents:'none' }}/>
+      <section
+        style={{
+          position: 'relative',
+          overflow: 'hidden',
+          padding: '82px 20px 72px',
+        }}
+      >
+        <div
+          style={{
+            position: 'absolute',
+            top: -200,
+            right: -150,
+            width: 620,
+            height: 620,
+            borderRadius: '50%',
+            background: 'radial-gradient(circle,rgba(255,107,43,.12) 0%,transparent 65%)',
+            pointerEvents: 'none',
+          }}
+        />
+        <div
+          style={{
+            position: 'absolute',
+            bottom: -220,
+            left: -100,
+            width: 500,
+            height: 500,
+            borderRadius: '50%',
+            background: 'radial-gradient(circle,rgba(79,140,255,.08) 0%,transparent 65%)',
+            pointerEvents: 'none',
+          }}
+        />
 
-        <div style={{ maxWidth:1200, margin:'0 auto', position:'relative' }}>
-          <div style={{ maxWidth:720, margin:'0 auto', textAlign:'center' }}>
-            {/* badge */}
-            <div className="mx-f1" style={{ display:'inline-flex', alignItems:'center', gap:8, background:'rgba(255,107,43,.08)', border:'1px solid rgba(255,107,43,.2)', borderRadius:99, padding:'6px 16px', marginBottom:30 }}>
-              <span className="mx-dot" style={{ width:7, height:7, borderRadius:'50%', background:T.accent, display:'block', flexShrink:0 }}/>
-              <span style={{ color:T.accentSoft, fontSize:12, fontWeight:600, letterSpacing:'.03em' }}>+4.2 millones de códigos entregados</span>
-            </div>
+        <div style={{ maxWidth: 1200, margin: '0 auto', position: 'relative' }}>
+          <div style={{ maxWidth: 760, margin: '0 auto', textAlign: 'center' }}>
 
-            <h1 className="mx-f2" style={{ fontFamily:T.fontDisplay, fontWeight:800, fontSize: mobile?'2.4rem':'4rem', lineHeight:1.08, marginBottom:22, letterSpacing:'-.02em' }}>
-              Códigos digitales.<br/>
-              <span className="mx-grad">Entrega inmediata.</span>
+            <h1
+              className="mx-f2"
+              style={{
+                fontFamily: T.fontDisplay,
+                fontWeight: 800,
+                fontSize: 'clamp(2.3rem, 7vw, 4.3rem)',
+                lineHeight: 1.05,
+                letterSpacing: '-.03em',
+                marginBottom: 18,
+              }}
+            >
+              Tu marketplace digital,
+              <br />
             </h1>
 
-            <p className="mx-f3" style={{ color:T.muted, fontSize: mobile?15:17, lineHeight:1.75, marginBottom:38, maxWidth:530, margin:'0 auto 38px' }}>
-              El marketplace más rápido y seguro para comprar gift cards, suscripciones y videojuegos. Tu código en segundos.
+            <p
+              className="mx-f3"
+              style={{
+                color: T.muted,
+                fontSize: 16,
+                lineHeight: 1.8,
+                maxWidth: 620,
+                margin: '0 auto 30px',
+              }}
+            >            
             </p>
 
-            <div className="mx-f4" style={{ display:'flex', gap:12, justifyContent:'center', flexWrap:'wrap', marginBottom:44 }}>
-              <Link href="/login" className="mx-primary" style={{fontSize:15,padding:'14px 30px'}}>Explorar productos →</Link>
-              <a href="#categorias" className="mx-ghost" style={{fontSize:15,padding:'14px 28px'}}>Ver categorías</a>
+            <div
+              className="mx-f4"
+              style={{
+                display: 'flex',
+                justifyContent: 'center',
+                gap: 12,
+                flexWrap: 'wrap',
+                marginBottom: 36,
+              }}
+            >
+              <Link href="/products" className="btn-primary" style={{ textDecoration: 'none' }}>
+                <span>Ver catálogo</span>
+              </Link>
+              <Link href="/login" className="btn-ghost" style={{ textDecoration: 'none' }}>
+                Iniciar sesión
+              </Link>
             </div>
+          </div>
 
-            <div className="mx-f5" style={{ display:'flex', flexWrap:'wrap', justifyContent:'center', gap:24 }}>
-              {[['✓','Entrega instantánea'],['✓','Pago seguro SSL'],['✓','Garantía de devolución']].map(([icon,text])=>(
-                <span key={text} style={{ display:'flex', alignItems:'center', gap:6, color:T.muted, fontSize:13 }}>
-                  <span style={{ color:T.green, fontWeight:700 }}>{icon}</span>{text}
-                </span>
+          <div className="mx-grid-4" style={{ marginTop: 22 }}>
+            {stats.map((item) => (
+              <div key={item.label} className="mx-stat-card">
+                <div style={{ color: T.muted, fontSize: 13, marginBottom: 8 }}>{item.label}</div>
+                <div style={{ fontFamily: T.fontDisplay, fontSize: '1.9rem', lineHeight: 1.1 }}>
+                  {loading ? '...' : item.value}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section id="categorias" style={{ padding: '0 20px 70px' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+          <div style={{ marginBottom: 26 }}>
+            <p style={{ color: T.accentSoft, fontSize: 12, fontWeight: 700, marginBottom: 8 }}>CATEGORÍAS</p>
+            <h2 style={{ fontFamily: T.fontDisplay, fontSize: '2rem', marginBottom: 10 }}>
+              Explora por categoría
+            </h2>
+          
+          </div>
+
+          {error ? (
+            <div
+              style={{
+                background: 'rgba(239,68,68,.08)',
+                border: '1px solid rgba(239,68,68,.3)',
+                borderRadius: 16,
+                padding: '16px 18px',
+                color: '#f87171',
+                marginBottom: 16,
+              }}
+            >
+              {error}
+            </div>
+          ) : null}
+
+          {loading ? (
+            <div className="mx-grid-6">
+              {Array.from({ length: 6 }).map((_, index) => (
+                <div
+                  key={index}
+                  style={{
+                    background: T.surface,
+                    border: `1px solid ${T.border}`,
+                    borderRadius: 18,
+                    padding: 18,
+                  }}
+                >
+                  <div className="mx-skeleton" style={{ width: 48, height: 48, borderRadius: 14, marginBottom: 14 }} />
+                  <div className="mx-skeleton" style={{ width: '80%', height: 16, borderRadius: 8, marginBottom: 10 }} />
+                  <div className="mx-skeleton" style={{ width: '55%', height: 12, borderRadius: 8 }} />
+                </div>
               ))}
             </div>
-          </div>
-
-          {/* ─ Floating hero card ─ */}
-          <div className="mx-float" style={{ marginTop:64, display:'flex', justifyContent:'center' }}>
-            <div style={{ position:'relative', background:T.surface, border:'1px solid rgba(255,255,255,.08)', borderRadius:22, padding:26, maxWidth:490, width:'100%', boxShadow:'0 50px 100px rgba(0,0,0,.6),0 0 0 1px rgba(255,255,255,.03) inset' }}>
-              {/* Glow */}
-              <div style={{ position:'absolute', inset:-1, borderRadius:23, background:'linear-gradient(135deg,rgba(255,107,43,.35),rgba(255,107,43,.04),rgba(79,140,255,.18))', opacity:.6, pointerEvents:'none', zIndex:-1 }}/>
-
-              <div style={{ ...row(), justifyContent:'space-between', marginBottom:18 }}>
-                <div>
-                  <div style={{ fontFamily:T.fontDisplay, fontWeight:700, fontSize:16, marginBottom:4 }}>Xbox Game Pass Ultimate</div>
-                  <div style={{ color:T.muted, fontSize:12 }}>3 meses · Todas las plataformas</div>
-                </div>
-                <span style={{ background:'rgba(255,107,43,.15)', color:T.accent, fontSize:10, fontWeight:800, padding:'4px 10px', borderRadius:8, letterSpacing:'.06em', fontFamily:T.fontDisplay }}>HOT</span>
-              </div>
-
-              {/* Code display */}
-              <div style={{ background:T.surface2, borderRadius:12, padding:'14px 18px', ...row(), justifyContent:'space-between', marginBottom:18, border:'1px solid rgba(255,107,43,.18)' }}>
-                <span style={{ fontFamily:T.fontMono, fontSize:15, letterSpacing:'.18em', color:T.green, fontWeight:600 }}>XXXX-XXXX-XXXX-XXXX</span>
-                <button style={{ background:'rgba(255,255,255,.06)', border:'1px solid rgba(255,255,255,.08)', borderRadius:7, padding:'5px 8px', cursor:'pointer', color:T.muted, fontSize:13 }}>⎘</button>
-              </div>
-
-              {/* Platforms */}
-              <div style={{ ...row(8), marginBottom:18 }}>
-                {['PC','Xbox','Mobile'].map(p=>(
-                  <span key={p} style={{ background:T.faint, border:`1px solid ${T.border}`, borderRadius:7, padding:'4px 10px', fontSize:11, color:T.muted, fontWeight:600 }}>{p}</span>
-                ))}
-              </div>
-
-              <div style={{ ...row(), justifyContent:'space-between' }}>
-                <div>
-                  <div style={{ fontSize:26, fontWeight:800, fontFamily:T.fontDisplay, lineHeight:1 }}>$12.99</div>
-                  <div style={{ color:T.muted, fontSize:11, marginTop:4, ...row(6) }}>
-                    <span style={{ textDecoration:'line-through' }}>$19.99</span>
-                    <span style={{ color:T.green, fontWeight:700 }}>−35%</span>
-                  </div>
-                </div>
-                <button className="mx-primary" style={{padding:'11px 22px',fontSize:13}}>Comprar ahora</button>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ═══ STATS ═══ */}
-      <section style={{ padding:'56px 24px', borderTop:`1px solid ${T.border}`, borderBottom:`1px solid ${T.border}` }}>
-        <div style={{ maxWidth:1200, margin:'0 auto', display:'grid', gridTemplateColumns: mobile?'1fr 1fr':'repeat(4,1fr)', gap:24 }}>
-          {STATS.map(({v,l,icon})=>(
-            <div key={l} style={{ textAlign:'center', padding:'8px 0' }}>
-              <div style={{ fontSize:24, marginBottom:8 }}>{icon}</div>
-              <div className="mx-grad" style={{ fontFamily:T.fontDisplay, fontWeight:800, fontSize: mobile?'1.8rem':'2.2rem', lineHeight:1 }}>{v}</div>
-              <div style={{ color:T.muted, fontSize:13, marginTop:6 }}>{l}</div>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* ═══ CATEGORIES ═══ */}
-      <section id="categorias" style={{ padding: mobile?'60px 20px':'80px 24px' }}>
-        <div style={{ maxWidth:1200, margin:'0 auto' }}>
-          <div style={{ textAlign:'center', marginBottom:48 }}>
-            <h2 style={{ fontFamily:T.fontDisplay, fontWeight:800, fontSize: mobile?'1.75rem':'2.2rem', marginBottom:10, letterSpacing:'-.01em' }}>Explora por categoría</h2>
-            <p style={{ color:T.muted, fontSize:15 }}>Miles de productos listos para entrega inmediata.</p>
-          </div>
-          <div style={{ display:'grid', gridTemplateColumns: mobile?'1fr 1fr':'repeat(6,1fr)', gap:14 }}>
-            {CATS.map(({name,icon,count,c})=>(
-              <a key={name} href="#" className="mx-cat">
-                <div style={{ fontSize:34, marginBottom:12 }}>{icon}</div>
-                <div style={{ fontFamily:T.fontDisplay, fontWeight:700, fontSize:13, marginBottom:6, color:T.text }}>{name}</div>
-                <div style={{ fontSize:11, fontWeight:700, color:c, background:`${c}1a`, borderRadius:6, padding:'3px 8px', display:'inline-block' }}>{count}</div>
-              </a>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ═══ PRODUCTS ═══ */}
-      <section style={{ padding: mobile?'0 20px 60px':'0 24px 80px' }}>
-        <div style={{ maxWidth:1200, margin:'0 auto' }}>
-          <div style={{ ...row(), justifyContent:'space-between', marginBottom:28 }}>
-            <h2 style={{ fontFamily:T.fontDisplay, fontWeight:800, fontSize: mobile?'1.5rem':'2rem', letterSpacing:'-.01em' }}>🔥 Más vendidos</h2>
-            <a href="#" style={{ color:T.accent, fontSize:13, fontWeight:600, textDecoration:'none' }}>Ver todos →</a>
-          </div>
-          <div style={{ display:'grid', gridTemplateColumns: mobile?'1fr':'repeat(3,1fr)', gap:18 }}>
-            {PRODS.map(({name,plat,price,old,badge,bc,e,a},i)=>(
-              <div
-                key={name} className="mx-card" style={{ padding:20, cursor:'pointer', position:'relative' }}
-                onMouseEnter={()=>setHovered(i)} onMouseLeave={()=>setHovered(null)}
-              >
-                {/* Image */}
-                <div style={{ height:110, borderRadius:12, marginBottom:16, background:`linear-gradient(135deg,${a}28,${a}0a)`, border:`1px solid ${a}20`, display:'flex', alignItems:'center', justifyContent:'center', position:'relative', overflow:'hidden' }}>
-                  <span style={{ fontSize:42 }}>{e}</span>
-                  {badge && <span className={`mx-product-badge ${bc}`} style={{ position:'absolute', top:12, right:12, fontSize:9, fontWeight:800, letterSpacing:'.08em', padding:'4px 9px', borderRadius:7, fontFamily:T.fontDisplay }}>{badge}</span>}
-                  <div style={{ position:'absolute', inset:0, background:'linear-gradient(135deg,rgba(255,255,255,.04) 0%,transparent 60%)', opacity: hovered===i?1:0, transition:'opacity .3s' }}/>
-                </div>
-                <div style={{ fontFamily:T.fontDisplay, fontWeight:700, fontSize:14, marginBottom:4, lineHeight:1.3, color:T.text }}>{name}</div>
-                <div style={{ color:T.muted, fontSize:12, marginBottom:16 }}>{plat}</div>
-                <div style={{ ...row(), justifyContent:'space-between' }}>
-                  <div style={row(6)}>
-                    <span style={{ fontFamily:T.fontDisplay, fontWeight:800, fontSize:20 }}>{price}</span>
-                    {old && <span style={{ color:T.muted, fontSize:11, textDecoration:'line-through' }}>{old}</span>}
-                  </div>
-                  <button className="mx-primary" style={{padding:'9px 18px',fontSize:12}}>Comprar</button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ═══ HOW IT WORKS ═══ */}
-      <section style={{ padding: mobile?'60px 20px':'80px 24px', background:T.surface, borderTop:`1px solid ${T.border}`, borderBottom:`1px solid ${T.border}` }}>
-        <div style={{ maxWidth:1100, margin:'0 auto', textAlign:'center' }}>
-          <h2 style={{ fontFamily:T.fontDisplay, fontWeight:800, fontSize: mobile?'1.75rem':'2.2rem', marginBottom:10, letterSpacing:'-.01em' }}>Tan simple como 1, 2, 3</h2>
-          <p style={{ color:T.muted, marginBottom:54, fontSize:15 }}>Sin complicaciones. Tu código en menos de 2 minutos.</p>
-          <div style={{ display:'grid', gridTemplateColumns: mobile?'1fr':'repeat(3,1fr)', gap: mobile?32:0, position:'relative' }}>
-            {STEPS.map(({n,icon,t,d},i)=>(
-              <div key={n} style={{ padding: mobile?'0':'0 40px', position:'relative' }}>
-                {/* connector */}
-                {!mobile && i<2 && (
-                  <div style={{ position:'absolute', top:26, left:'60%', width:'75%', height:1, background:`linear-gradient(90deg,rgba(255,107,43,.35),transparent)` }}/>
-                )}
-                <div style={{ width:52, height:52, borderRadius:15, margin:'0 auto 16px', background:'rgba(255,107,43,.1)', border:'1px solid rgba(255,107,43,.2)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:22 }}>{icon}</div>
-                <div style={{ fontFamily:T.fontDisplay, fontWeight:800, fontSize:10, color:T.accent, letterSpacing:'.1em', marginBottom:8 }}>PASO {n}</div>
-                <h3 style={{ fontFamily:T.fontDisplay, fontWeight:700, fontSize:17, marginBottom:10 }}>{t}</h3>
-                <p style={{ color:T.muted, fontSize:14, lineHeight:1.75 }}>{d}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ═══ REVIEWS ═══ */}
-      <section style={{ padding: mobile?'60px 20px':'80px 24px' }}>
-        <div style={{ maxWidth:1200, margin:'0 auto' }}>
-          <div style={{ textAlign:'center', marginBottom:48 }}>
-            <h2 style={{ fontFamily:T.fontDisplay, fontWeight:800, fontSize: mobile?'1.75rem':'2.2rem', letterSpacing:'-.01em' }}>Lo que dicen nuestros clientes</h2>
-          </div>
-          <div style={{ display:'grid', gridTemplateColumns: mobile?'1fr':'repeat(3,1fr)', gap:18 }}>
-            {REVIEWS.map(({name,h,t,s})=>(
-              <div key={name} className="mx-card" style={{ padding:22 }}>
-                <div style={{ ...row(2), marginBottom:14 }}>
-                  {Array.from({length:s}).map((_,i)=>( <span key={i} style={{ color:'#f5c518', fontSize:14 }}>★</span> ))}
-                </div>
-                <p style={{ color:T.muted, fontSize:14, lineHeight:1.75, marginBottom:18, fontStyle:'italic' }}>"{t}"</p>
-                <div style={row(10)}>
-                  <div style={{ width:36, height:36, borderRadius:'50%', background:`linear-gradient(135deg,${T.accent},#6366f1)`, display:'flex', alignItems:'center', justifyContent:'center', fontSize:13, fontWeight:700, color:'#fff', flexShrink:0 }}>
-                    {name.split(' ').map((w:string)=>w[0]).join('')}
-                  </div>
-                  <div>
-                    <div style={{ fontSize:13, fontWeight:600 }}>{name}</div>
-                    <div style={{ fontSize:11, color:T.muted }}>{h}</div>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ═══ NEWSLETTER ═══ */}
-      <section style={{ padding: mobile?'60px 20px':'80px 24px', background:T.surface, borderTop:`1px solid ${T.border}`, borderBottom:`1px solid ${T.border}` }}>
-        <div style={{ maxWidth:540, margin:'0 auto', textAlign:'center' }}>
-          <div style={{ width:52, height:52, borderRadius:15, background:'rgba(255,107,43,.1)', border:'1px solid rgba(255,107,43,.2)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, margin:'0 auto 20px' }}>📬</div>
-          <h2 style={{ fontFamily:T.fontDisplay, fontWeight:800, fontSize: mobile?'1.6rem':'2rem', marginBottom:12, letterSpacing:'-.01em' }}>Ofertas exclusivas en tu correo</h2>
-          <p style={{ color:T.muted, marginBottom:28, fontSize:15 }}>Suscríbete y recibe descuentos de hasta 40% antes que nadie.</p>
-          {subOk ? (
-            <div style={{ background:'rgba(34,216,122,.08)', border:'1px solid rgba(34,216,122,.25)', borderRadius:14, padding:'16px 24px', color:T.green, fontWeight:600, fontSize:14 }}>
-              ✓ ¡Listo! Revisa tu correo para confirmar la suscripción.
-            </div>
+          ) : categories.length === 0 ? (
+            <div className="mx-empty">No hay categorías disponibles en este momento.</div>
           ) : (
-            <div style={{ display:'flex', gap:10, flexDirection: mobile?'column':'row' }}>
-              <input type="email" className="mx-input" value={email} onChange={e=>setEmail(e.target.value)} placeholder="tu@correo.com" style={{flex:1}}/>
-              <button className="mx-primary" style={{padding:'13px 22px',fontSize:14}} onClick={()=>email&&setSubOk(true)}>Suscribirme</button>
+            <div className="mx-grid-6">
+              {categories.map((category) => (
+                <Link key={category.id} href="/products" className="mx-cat-card">
+                  <div
+                    style={{
+                      width: 48,
+                      height: 48,
+                      borderRadius: 14,
+                      background: 'rgba(255,107,43,.1)',
+                      border: '1px solid rgba(255,107,43,.18)',
+                      color: T.accentSoft,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontFamily: T.fontDisplay,
+                      fontWeight: 800,
+                      marginBottom: 14,
+                    }}
+                  >
+                    {getInitials(category.name)}
+                  </div>
+
+                  <div
+                    style={{
+                      color: T.text,
+                      fontFamily: T.fontDisplay,
+                      fontWeight: 700,
+                      fontSize: 14,
+                      lineHeight: 1.35,
+                      marginBottom: 8,
+                    }}
+                  >
+                    {category.name}
+                  </div>
+
+                  <div style={{ color: T.muted, fontSize: 12 }}>
+                    Disponible en catálogo
+                  </div>
+                </Link>
+              ))}
             </div>
           )}
         </div>
       </section>
 
-      {/* ═══ FOOTER ═══ */}
-      <footer style={{ padding: mobile?'48px 20px':'64px 24px' }}>
-        <div style={{ maxWidth:1200, margin:'0 auto' }}>
-          <div style={{ display:'grid', gridTemplateColumns: mobile?'1fr 1fr':'1.8fr 1fr 1fr 1fr', gap: mobile?'36px 20px':40, marginBottom:52 }}>
-            {/* Brand */}
-            <div style={{ gridColumn: mobile?'span 2':'span 1' }}>
-              <div style={{ ...row(10), marginBottom:14 }}>
-                <div style={{ width:32, height:32, borderRadius:9, background:'linear-gradient(135deg,#ff6b2b,#ff9d5c)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:15, fontWeight:900, color:'#fff', fontFamily:T.fontDisplay }}>M</div>
-                <span style={{ fontFamily:T.fontDisplay, fontWeight:800, fontSize:17 }}>Mercadox</span>
-              </div>
-              <p style={{ color:T.muted, fontSize:13, lineHeight:1.7, maxWidth:230, marginBottom:20 }}>
-                El marketplace de códigos digitales más confiable de Latinoamérica.
-              </p>
-              <div style={row(8)}>
-                {['X','D','IG'].map(s=>(
-                  <a key={s} href="#" style={{ width:34, height:34, borderRadius:9, background:T.surface2, border:`1px solid ${T.border}`, display:'flex', alignItems:'center', justifyContent:'center', color:T.muted, fontSize:11, fontWeight:800, textDecoration:'none' }}>{s}</a>
-                ))}
-              </div>
+      <section id="destacados" style={{ padding: '0 20px 80px' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+          <div
+            style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              gap: 16,
+              alignItems: 'end',
+              flexWrap: 'wrap',
+              marginBottom: 26,
+            }}
+          >
+            <div>
+              <p style={{ color: T.accentSoft, fontSize: 12, fontWeight: 700, marginBottom: 8 }}>DESTACADOS</p>
+              <h2 style={{ fontFamily: T.fontDisplay, fontSize: '2rem', marginBottom: 10 }}>
+                Productos visibles en la primera página
+              </h2>
+        
             </div>
 
-            {[
-              {title:'Producto', links:['Explorar','Categorías','Ofertas','Nuevos']},
-              {title:'Empresa',  links:['Sobre nosotros','Blog','Prensa','Carreras']},
-              {title:'Soporte',  links:['Centro de ayuda','Contacto','Privacidad','Términos']},
-            ].map(({title,links})=>(
-              <div key={title}>
-                <div style={{ fontFamily:T.fontDisplay, fontWeight:700, fontSize:11, color:T.text, marginBottom:16, letterSpacing:'.06em' }}>{title.toUpperCase()}</div>
-                {links.map(l=>(<a key={l} href="#" className="mx-flink">{l}</a>))}
-              </div>
-            ))}
+            <Link href="/products" className="btn-ghost" style={{ textDecoration: 'none' }}>
+              Ver todos
+            </Link>
           </div>
 
-          <div style={{ borderTop:`1px solid ${T.border}`, paddingTop:24, ...row(), justifyContent:'space-between', flexWrap:'wrap', gap:12 }}>
-            <p style={{ color:T.muted, fontSize:12 }}>© 2025 Mercadox. Todos los derechos reservados.</p>
-            <div style={row(6)}>
-              {['Visa','MC','PayPal','BTC'].map(m=>(
-                <span key={m} style={{ background:T.surface2, border:`1px solid ${T.border}`, borderRadius:6, padding:'4px 10px', fontSize:10, color:T.muted, fontWeight:700 }}>{m}</span>
+          {loading ? (
+            <div className="mx-grid-3">
+              {Array.from({ length: 6 }).map((_, index) => (
+                <div
+                  key={index}
+                  style={{
+                    background: T.surface,
+                    border: `1px solid ${T.border}`,
+                    borderRadius: 20,
+                    padding: 18,
+                  }}
+                >
+                  <div className="mx-skeleton" style={{ height: 180, borderRadius: 14, marginBottom: 14 }} />
+                  <div className="mx-skeleton" style={{ height: 18, width: '70%', borderRadius: 8, marginBottom: 10 }} />
+                  <div className="mx-skeleton" style={{ height: 12, width: '45%', borderRadius: 8, marginBottom: 14 }} />
+                  <div className="mx-skeleton" style={{ height: 18, width: '35%', borderRadius: 8 }} />
+                </div>
               ))}
             </div>
+          ) : featuredProducts.length === 0 ? (
+            <div className="mx-empty">No hay productos para mostrar en la landing.</div>
+          ) : (
+            <div className="mx-grid-3">
+              {featuredProducts.map((product) => (
+                <article key={product.id} className="mx-product-card">
+                  <div
+                  className="mx-float"
+                  style={{
+                    aspectRatio: '16 / 10',
+                    width: '100%',
+                    borderRadius: 16,
+                    overflow: 'hidden',
+                    background: T.surface2,
+                    border: `1px solid ${T.border}`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: 12,
+                  }}
+                >
+                  {product.imageUrl ? (
+                    <img
+                      src={product.imageUrl}
+                      alt={product.name}
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'contain',
+                        objectPosition: 'center',
+                        display: 'block',
+                      }}
+                    />
+                  ) : (
+                    <div
+                      style={{
+                        width: 76,
+                        height: 76,
+                        borderRadius: 20,
+                        background: T.faint,
+                        color: T.muted,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontFamily: T.fontDisplay,
+                        fontWeight: 800,
+                        fontSize: 22,
+                      }}
+                    >
+                      {getInitials(product.name)}
+                    </div>
+                  )}
+                </div>
+
+                  <div>
+                    <div
+                      style={{
+                        color: T.text,
+                        fontFamily: T.fontDisplay,
+                        fontWeight: 700,
+                        fontSize: 18,
+                        lineHeight: 1.3,
+                        marginBottom: 6,
+                      }}
+                    >
+                      {product.name}
+                    </div>
+
+                    <div style={{ color: T.muted, fontSize: 13, marginBottom: 12 }}>
+                      {product.categoryName}
+                    </div>
+
+                    <div
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        gap: 12,
+                        alignItems: 'center',
+                        flexWrap: 'wrap',
+                      }}
+                    >
+                      <div>
+                        <div
+                          style={{
+                            fontFamily: T.fontDisplay,
+                            fontWeight: 800,
+                            fontSize: 22,
+                            color: T.accent,
+                            lineHeight: 1.1,
+                          }}
+                        >
+                          {formatCurrency(Number(product.price))}
+                        </div>
+                        <div
+                          style={{
+                            color: product.stock > 0 ? T.green : '#f87171',
+                            fontSize: 12,
+                            fontWeight: 700,
+                            marginTop: 6,
+                          }}
+                        >
+                          {product.stock > 0 ? `Stock: ${product.stock}` : 'Sin stock'}
+                        </div>
+                      </div>
+
+                      <Link
+                        href={`/products/${product.id}`}
+                        className="btn-primary"
+                        style={{ textDecoration: 'none' }}
+                      >
+                        <span>Ver detalle</span>
+                      </Link>
+                    </div>
+                  </div>
+                </article>
+              ))}
+            </div>
+          )}
+        </div>
+      </section>
+
+      <section style={{ padding: '0 20px 80px' }}>
+        <div
+          style={{
+            maxWidth: 1200,
+            margin: '0 auto',
+            background: T.surface,
+            border: `1px solid ${T.border}`,
+            borderRadius: 24,
+            padding: '28px 24px',
+            display: 'flex',
+            justifyContent: 'space-between',
+            gap: 18,
+            alignItems: 'center',
+            flexWrap: 'wrap',
+          }}
+        >
+          <div>
+            <p style={{ color: T.accentSoft, fontSize: 12, fontWeight: 700, marginBottom: 8 }}>SIGUIENTE PASO</p>
+            <h2 style={{ fontFamily: T.fontDisplay, fontSize: '1.8rem', marginBottom: 8 }}>
+              Entra al catálogo completo
+            </h2>
+            <p style={{ color: T.muted, fontSize: 14, lineHeight: 1.7 }}>
+              Desde productos podrás filtrar, paginar y entrar al detalle de cada artículo conectado al backend.
+            </p>
+          </div>
+
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+            <Link href="/products" className="btn-primary" style={{ textDecoration: 'none' }}>
+              <span>Ir a productos</span>
+            </Link>
+            <Link href="/login" className="btn-ghost" style={{ textDecoration: 'none' }}>
+              Iniciar sesión
+            </Link>
           </div>
         </div>
-      </footer>
+      </section>
     </div>
   );
 }

@@ -16,7 +16,7 @@ const T = {
   fontBody: '"DM Sans", system-ui, sans-serif',
 };
 
-export default function PostSaleDashboard() {
+export default function SellerPage() {
   const router = useRouter();
 
   useEffect(() => {
@@ -26,7 +26,7 @@ export default function PostSaleDashboard() {
     }
 
     const role = typeof window !== 'undefined' ? localStorage.getItem('mercadox_role') : null;
-    if (role !== 'ADMIN') {
+    if (role !== 'SELLER') {
       router.replace('/products');
     }
   }, [router]);
@@ -41,36 +41,22 @@ export default function PostSaleDashboard() {
 
   return (
     <div style={{ minHeight: '100vh', background: T.bg, color: T.text, fontFamily: T.fontBody }}>
-      <div style={{ maxWidth: 1100, margin: '0 auto', padding: '32px 20px 60px' }}>
+      <div style={{ maxWidth: 1000, margin: '0 auto', padding: '32px 20px 60px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', marginBottom: 28 }}>
           <div>
-            <p style={{ color: T.accent, fontSize: 12, fontWeight: 700, marginBottom: 8 }}>ADMIN PANEL</p>
-            <h1 style={{ fontFamily: T.fontDisplay, fontSize: '2rem', marginBottom: 8 }}>Post-Sale Dashboard</h1>
-            <p style={{ color: T.muted }}>Vista base lista mientras conectas endpoints administrativos reales.</p>
+            <p style={{ color: T.accent, fontSize: 12, fontWeight: 700, marginBottom: 8 }}>SELLER AREA</p>
+            <h1 style={{ fontFamily: T.fontDisplay, fontSize: '2rem', marginBottom: 8 }}>Panel de vendedor</h1>
+            <p style={{ color: T.muted }}>Vista lista para conectar catálogo, ventas y estado de publicaciones.</p>
           </div>
 
           <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
             <Link href="/products" className="btn-ghost" style={{ textDecoration: 'none' }}>
-              Ver productos
+              Ir a productos
             </Link>
             <button className="btn-primary" type="button" onClick={handleLogout}>
               <span>Cerrar sesión</span>
             </button>
           </div>
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 18, marginBottom: 24 }}>
-          {[
-            { label: 'Órdenes abiertas', value: '0' },
-            { label: 'Tickets pendientes', value: '0' },
-            { label: 'Incidencias', value: '0' },
-            { label: 'Clientes activos', value: '0' },
-          ].map((item) => (
-            <div key={item.label} className="card" style={{ padding: 20, background: T.surface }}>
-              <div style={{ color: T.muted, fontSize: 13, marginBottom: 8 }}>{item.label}</div>
-              <div style={{ fontFamily: T.fontDisplay, fontSize: '2rem' }}>{item.value}</div>
-            </div>
-          ))}
         </div>
 
         <div
@@ -81,9 +67,9 @@ export default function PostSaleDashboard() {
             padding: 22,
           }}
         >
-          <h2 style={{ fontFamily: T.fontDisplay, marginBottom: 10 }}>Siguiente paso recomendado</h2>
+          <h2 style={{ fontFamily: T.fontDisplay, marginBottom: 10 }}>Estado actual</h2>
           <p style={{ color: T.muted, lineHeight: 1.7 }}>
-            Cuando tengas endpoints administrativos, aquí puedes conectar métricas, listado de órdenes, postventa y soporte.
+            Tu backend mostrado todavía no expone endpoints de vendedor. Esta vista evita errores de navegación y te deja listo el destino del rol.
           </p>
         </div>
       </div>
