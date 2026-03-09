@@ -3,9 +3,11 @@ export interface LoginRequest {
   password: string;
 }
 
+export type UserRole = 'CONSUMER' | 'SELLER' | 'ADMIN';
+
 export interface LoginResponse {
-  access_token: string;
-  role: string;
+  accessToken: string;
+  role: UserRole;
 }
 
 export interface RecoverPasswordRequest {

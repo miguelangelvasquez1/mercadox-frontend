@@ -1,8 +1,10 @@
+import type { UserRole } from "./auth.types";
+
 export interface User {
-  id: string;
+  id: number;
   name: string;
   email: string;
-  avatar?: string;
-  role: 'buyer' | 'seller' | 'admin';
-  created_at: string;
+  avatarUrl?: string | null;
+  role: UserRole;
+  createdAt: string;
 }
