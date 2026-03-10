@@ -145,6 +145,9 @@ export default function ProductsPage() {
             <Link href="/cart" className="btn-ghost" style={{ textDecoration: 'none' }}>
               Carrito ({totalItems})
             </Link>
+            <Link href="/payment" className="btn-ghost" style={{ textDecoration: 'none' }}>
+              Recargar
+            </Link>
           </div>
         </div>
 
