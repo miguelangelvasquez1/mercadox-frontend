@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { productService } from '@/lib/services/productService';
 import type { ProductCategory, ProductSummary } from '@/lib/types/product.types';
+import { useCart } from '@/lib/cart/CartContext';
 
 const T = {
   bg: '#07080f',
@@ -27,7 +28,7 @@ export default function ProductsPage() {
   const [loading, setLoading] = useState(true);
   const [categoriesLoading, setCategoriesLoading] = useState(true);
   const [error, setError] = useState('');
-
+  const { addItem, totalItems } = useCart();
   const [searchQuery, setSearchQuery] = useState('');
   const [categoryId, setCategoryId] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
@@ -140,6 +141,9 @@ export default function ProductsPage() {
             </Link>
             <Link href="/login" className="btn-primary" style={{ textDecoration: 'none' }}>
               <span>Iniciar sesión</span>
+            </Link>
+            <Link href="/cart" className="btn-ghost" style={{ textDecoration: 'none' }}>
+              Carrito ({totalItems})
             </Link>
           </div>
         </div>
@@ -312,6 +316,23 @@ export default function ProductsPage() {
                       <span>Ver detalle</span>
                     </Link>
                   </div>
+                  <button
+                    className="btn-ghost"
+                    type="button"
+                    onClick={() =>
+                      addItem({
+                        productId: product.id,
+                        name: product.name,
+                        imageUrl: product.imageUrl,
+                        price: Number(product.price),
+                        stock: product.stock,
+                        categoryName: product.categoryName,
+                        quantity: 1,
+                      })
+                    }
+                  >
+                    Agregar al carrito
+                  </button>
                 </article>
               ))}
             </div>

@@ -7,6 +7,7 @@ import { authService } from '@/lib/services/authService';
 import { productService } from '@/lib/services/productService';
 import { purchaseService } from '@/lib/services/purchaseService';
 import type { ProductDetail } from '@/lib/types/product.types';
+import { useCart } from '@/lib/cart/CartContext';
 
 const T = {
   bg: '#07080f',
@@ -26,7 +27,7 @@ export default function ProductDetailPage() {
   const params = useParams();
   const router = useRouter();
   const productId = useMemo(() => Number(params?.productId), [params]);
-
+  const { addItem } = useCart();
   const [product, setProduct] = useState<ProductDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [buying, setBuying] = useState(false);
@@ -39,6 +40,22 @@ export default function ProductDetailPage() {
       currency: 'COP',
       maximumFractionDigits: 0,
     }).format(value);
+
+    const handleAddToCart = () => {
+  if (!product) return;
+
+    addItem({
+      productId: product.id,
+      name: product.name,
+      imageUrl: product.imageUrl,
+      price: Number(product.price),
+      stock: product.stock,
+      categoryName: product.categoryName,
+      quantity: 1,
+    });
+
+    setActionMessage('Producto agregado al carrito.');
+  };
 
   useEffect(() => {
     const loadProduct = async () => {
@@ -198,6 +215,14 @@ export default function ProductDetailPage() {
                 <Link href="/login" className="btn-ghost" style={{ textDecoration: 'none' }}>
                   Iniciar sesión
                 </Link>
+                <button
+                className="btn-ghost"
+                type="button"
+                onClick={handleAddToCart}
+                disabled={product.stock <= 0}
+              >
+                Agregar al carrito
+              </button>
               </div>
 
               {actionMessage && (

@@ -263,21 +263,6 @@ export default function LoginPage() {
           </Link>
 
           <div className="lx-panel-content" style={{ position: 'relative', zIndex: 1 }}>
-            <div
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 7,
-                background: 'rgba(255,107,43,.08)',
-                border: '1px solid rgba(255,107,43,.2)',
-                borderRadius: 99,
-                padding: '5px 14px',
-                marginBottom: 28,
-              }}
-            >
-              <span className="lx-dot" style={{ width: 6, height: 6, borderRadius: '50%', background: T.accent, display: 'block', flexShrink: 0 }} />
-              <span style={{ color: T.accentSoft, fontSize: 12, fontWeight: 600 }}>4.2M+ códigos entregados</span>
-            </div>
 
             <h2 style={{ fontFamily: T.fontDisplay, fontWeight: 800, fontSize: '2.4rem', lineHeight: 1.1, marginBottom: 18, letterSpacing: '-.02em' }}>
               Tu código digital,
@@ -317,44 +302,6 @@ export default function LoginPage() {
                   </div>
                 </div>
               ))}
-            </div>
-          </div>
-
-          <div className="lx-float" style={{ position: 'relative', zIndex: 1 }}>
-            <div style={{ background: 'rgba(255,255,255,.025)', border: `1px solid ${T.border}`, borderRadius: 16, padding: '20px 22px' }}>
-              <div style={{ ...row(2), marginBottom: 12 }}>
-                {Array.from({ length: 5 }).map((_, i) => (
-                  <span key={i} style={{ color: '#f5c518', fontSize: 13 }}>
-                    ★
-                  </span>
-                ))}
-              </div>
-              <p style={{ color: T.muted, fontSize: 13, lineHeight: 1.75, fontStyle: 'italic', marginBottom: 16 }}>
-                &quot;Compré un código de Netflix y lo recibí en 30 segundos. La plataforma más rápida que he usado.&quot;
-              </p>
-              <div style={row(10)}>
-                <div
-                  style={{
-                    width: 34,
-                    height: 34,
-                    borderRadius: '50%',
-                    background: 'linear-gradient(135deg,#ff6b2b,#6366f1)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    fontSize: 12,
-                    fontWeight: 800,
-                    color: '#fff',
-                    flexShrink: 0,
-                  }}
-                >
-                  MG
-                </div>
-                <div>
-                  <div style={{ fontSize: 13, fontWeight: 600 }}>María García</div>
-                  <div style={{ fontSize: 11, color: T.muted }}>Cliente verificada · 4.9 ★</div>
-                </div>
-              </div>
             </div>
           </div>
         </div>
@@ -524,19 +471,6 @@ export default function LoginPage() {
             <div style={{ flex: 1, height: 1, background: T.border }} />
           </div>
 
-          <div className="lx-f6" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-            {[
-              { name: 'Google', icon: 'G', color: '#ea4335' },
-              { name: 'Discord', icon: 'D', color: '#5865f2' },
-            ].map(({ name, icon, color }) => (
-              <button key={name} className="lx-btn-ghost" type="button">
-                <span className="lx-social-icon" style={{ color }}>
-                  {icon}
-                </span>
-                {name}
-              </button>
-            ))}
-          </div>
 
           <p className="lx-f6" style={{ textAlign: 'center', color: T.muted, fontSize: 14, marginTop: 28 }}>
             ¿No tienes cuenta?{' '}
