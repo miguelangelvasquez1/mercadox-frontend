@@ -204,18 +204,6 @@ export default function ProductDetailPage() {
 
               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
                 <button
-                  className="btn-primary"
-                  type="button"
-                  onClick={handleBuyNow}
-                  disabled={buying || product.stock <= 0}
-                >
-                  <span>{buying ? 'Procesando...' : 'Comprar ahora'}</span>
-                </button>
-
-                <Link href="/login" className="btn-ghost" style={{ textDecoration: 'none' }}>
-                  Iniciar sesión
-                </Link>
-                <button
                 className="btn-ghost"
                 type="button"
                 onClick={handleAddToCart}
