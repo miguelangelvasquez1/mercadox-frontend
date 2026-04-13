@@ -242,68 +242,6 @@ export default function HomePage() {
     >
       <style>{STYLES}</style>
 
-      <nav
-        style={{
-          position: 'sticky',
-          top: 0,
-          zIndex: 100,
-          backdropFilter: 'blur(20px)',
-          WebkitBackdropFilter: 'blur(20px)',
-          background: 'rgba(7,8,15,0.84)',
-          borderBottom: `1px solid ${T.border}`,
-        }}
-      >
-        <div
-          style={{
-            maxWidth: 1200,
-            margin: '0 auto',
-            padding: '0 20px',
-            height: 68,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            gap: 16,
-          }}
-        >
-          <Link href="/" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none' }}>
-            <div
-              style={{
-                width: 38,
-                height: 38,
-                borderRadius: 11,
-                background: 'linear-gradient(135deg,#ff6b2b,#ff9d5c)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#fff',
-                fontWeight: 900,
-                fontFamily: T.fontDisplay,
-              }}
-            >
-              M
-            </div>
-            <span style={{ fontFamily: T.fontDisplay, fontWeight: 800, fontSize: 20, color: T.text }}>
-              Mercadox
-            </span>
-          </Link>
-
-          <div className="mx-hide-mobile" style={{ display: 'flex', alignItems: 'center', gap: 28 }}>
-            <a href="#categorias" className="mx-nav-link">Categorías</a>
-            <a href="#destacados" className="mx-nav-link">Destacados</a>
-            <Link href="/products" className="mx-nav-link">Productos</Link>
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Link href="/login" className="btn-ghost" style={{ textDecoration: 'none' }}>
-              Iniciar sesión
-            </Link>
-            <Link href="/products" className="btn-primary" style={{ textDecoration: 'none' }}>
-              <span>Explorar</span>
-            </Link>
-          </div>
-        </div>
-      </nav>
-
       <section
         style={{
           position: 'relative',

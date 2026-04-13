@@ -3,23 +3,28 @@ export interface LoginRequest {
   password: string;
 }
 
-export type UserRole = 'CONSUMER' | 'SELLER' | 'ADMIN';
+export type UserRole = 'CONSUMER' | 'ADMIN';
 
 export interface LoginResponse {
   accessToken: string;
   role: UserRole;
 }
 
-export interface RecoverPasswordRequest {
+// --- Registro ---
+export interface RegisterRequest {
+  email: string;
+  password: string;
+  phoneNumber: string;
+  role: UserRole;
+}
+
+// --- Recuperar contraseña ---
+export interface ForgotPasswordRequest {
   email: string;
 }
 
-export interface RecoverPasswordResponse {
-  message: string;
-}
-
+// --- Reset contraseña ---
 export interface ResetPasswordRequest {
   token: string;
-  password: string;
-  password_confirmation: string;
+  newPassword: string; // Debe coincidir con el record del back
 }

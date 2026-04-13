@@ -135,20 +135,7 @@ export default function ProductsPage() {
             <p style={{ color: T.muted, fontSize: 14 }}>Busca, filtra y revisa el detalle de cada producto.</p>
           </div>
 
-          <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-            <Link href="/" className="btn-ghost" style={{ textDecoration: 'none' }}>
-              Volver al inicio
-            </Link>
-            <Link href="/login" className="btn-primary" style={{ textDecoration: 'none' }}>
-              <span>Iniciar sesión</span>
-            </Link>
-            <Link href="/cart" className="btn-ghost" style={{ textDecoration: 'none' }}>
-              Carrito ({totalItems})
-            </Link>
-            <Link href="/payment" className="btn-ghost" style={{ textDecoration: 'none' }}>
-              Recargar
-            </Link>
-          </div>
+          
         </div>
 
         <form

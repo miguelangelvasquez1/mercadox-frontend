@@ -2,16 +2,13 @@ import { apiClient } from "./apiClient";
 import type {
   LoginRequest,
   LoginResponse,
-  RecoverPasswordRequest,
-  RecoverPasswordResponse,
-  ResetPasswordRequest
+  RegisterRequest,
+  ForgotPasswordRequest,
+  ResetPasswordRequest,
 } from "../types/auth.types";
-import { User } from "../types/user.types";
 
 export const authService = {
-  /**
-   * Authenticate user and store tokens
-   */
+
   async login(credentials: LoginRequest): Promise<LoginResponse> {
     const response = await apiClient.post<LoginResponse>('/auth/login', credentials);
     if (typeof window !== 'undefined') {
@@ -20,9 +17,6 @@ export const authService = {
     return response;
   },
 
-  /**
-   * Logout user and clear tokens
-   */
   async logout(): Promise<void> {
     try {
       await apiClient.post('/auth/logout');
@@ -34,9 +28,21 @@ export const authService = {
     }
   },
 
+  async register(data: RegisterRequest): Promise<void> {
+    await apiClient.post('/auth/register', data);
+  },
+
   /**
-   * Check if user is authenticated (client-side)
+   * Siempre resuelve — el backend no revela si el email existe
    */
+  async forgotPassword(data: ForgotPasswordRequest): Promise<void> {
+    await apiClient.post('/auth/forgot-password', data);
+  },
+
+  async resetPassword(data: ResetPasswordRequest): Promise<void> {
+    await apiClient.post('/auth/reset-password', data);
+  },
+
   isAuthenticated(): boolean {
     if (typeof window === 'undefined') return false;
     return !!localStorage.getItem('mercadox_token');

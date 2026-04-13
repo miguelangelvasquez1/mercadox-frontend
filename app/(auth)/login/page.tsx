@@ -4,6 +4,7 @@ import { useState, FormEvent, useEffect, CSSProperties } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { authService } from '@/lib/services/authService';
+import { useAuth } from '@/lib/auth/AuthContext';
 
 const T = {
   bg:          '#07080f',
@@ -54,7 +55,6 @@ const STYLES = `
   .lx-f6 { animation:lx-up .6s .42s ease both; }
 
   .lx-panel-content { animation:lx-left .7s .1s ease both; }
-
   .lx-dot { animation:lx-pulse 2.2s ease-in-out infinite; }
   .lx-float { animation:lx-float 6s ease-in-out infinite; }
 
@@ -112,28 +112,23 @@ const STYLES = `
   }
   .lx-feat:hover { border-color:rgba(255,107,43,.2); }
 
-  .lx-social-icon {
-    width:24px; height:24px; border-radius:6px;
-    display:flex; align-items:center; justify-content:center;
-    font-size:13px; font-weight:800;
-    background:rgba(255,255,255,.07); flex-shrink:0;
-  }
-
   ::-webkit-scrollbar { width:5px; }
   ::-webkit-scrollbar-track { background:${T.bg}; }
   ::-webkit-scrollbar-thumb { background:#252840; border-radius:99px; }
 `;
 
 export default function LoginPage() {
-  const router = useRouter();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPass, setShowPass] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
+  const router         = useRouter();
+  const { login }      = useAuth();
+
+  const [email, setEmail]           = useState('');
+  const [password, setPassword]     = useState('');
+  const [showPass, setShowPass]     = useState(false);
+  const [loading, setLoading]       = useState(false);
+  const [error, setError]           = useState('');
   const [emailTouched, setEmailTouched] = useState(false);
-  const [passTouched, setPassTouched] = useState(false);
-  const [mobile, setMobile] = useState(false);
+  const [passTouched, setPassTouched]   = useState(false);
+  const [mobile, setMobile]         = useState(false);
 
   useEffect(() => {
     const fn = () => setMobile(window.innerWidth < 1024);
@@ -143,13 +138,12 @@ export default function LoginPage() {
   }, []);
 
   const emailInvalid = emailTouched && !email.includes('@');
-  const passInvalid = passTouched && password.length < 6;
+  const passInvalid  = passTouched  && password.length < 6;
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setEmailTouched(true);
     setPassTouched(true);
-
     if (emailInvalid || passInvalid) return;
 
     setError('');
@@ -158,24 +152,15 @@ export default function LoginPage() {
     try {
       const response = await authService.login({ email, password });
 
-      if (typeof window !== 'undefined') {
-        localStorage.setItem('mercadox_role', response.role);
-      }
+      // AuthContext actualiza estado global + localStorage en una sola llamada
+      login(response.accessToken, response.role);
 
-      if (response.role === 'ADMIN') {
-        router.push('/postSaleDashboard');
-      } else if (response.role === 'CONSUMER') {
-        router.push('/products');
-      } else if (response.role === 'SELLER') {
-        router.push('/seller');
-      } else {
-        setError('Rol de usuario no soportado por el frontend.');
-      }
+      if (response.role === 'ADMIN')         router.push('/admin/postSaleDashboard');
+      else if (response.role === 'CONSUMER') router.push('/products');
+      else if (response.role === 'SELLER')   router.push('/seller');
+      else setError('Rol de usuario no soportado por el frontend.');
+
     } catch (err: unknown) {
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('mercadox_role');
-      }
-
       const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
       setError(msg || 'Correo o contraseña incorrectos. Intenta de nuevo.');
     } finally {
@@ -190,80 +175,19 @@ export default function LoginPage() {
     <div className="lx-page" style={{ display: 'flex' }}>
       <style>{STYLES}</style>
 
+      {/* ── Panel izquierdo (solo desktop) ── */}
       {!mobile && (
-        <div
-          style={{
-            flex: '0 0 46%',
-            position: 'relative',
-            overflow: 'hidden',
-            background: T.surface,
-            borderRight: `1px solid ${T.border}`,
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between',
-            padding: '40px 48px',
-          }}
-        >
-          <div
-            style={{
-              position: 'absolute',
-              top: -200,
-              right: -200,
-              width: 600,
-              height: 600,
-              borderRadius: '50%',
-              background: 'radial-gradient(circle,rgba(255,107,43,.16) 0%,transparent 65%)',
-              pointerEvents: 'none',
-            }}
-          />
-          <div
-            style={{
-              position: 'absolute',
-              bottom: -250,
-              left: -120,
-              width: 500,
-              height: 500,
-              borderRadius: '50%',
-              background: 'radial-gradient(circle,rgba(79,140,255,.09) 0%,transparent 65%)',
-              pointerEvents: 'none',
-            }}
-          />
-          <div
-            style={{
-              position: 'absolute',
-              inset: 0,
-              backgroundImage:
-                'linear-gradient(rgba(255,255,255,.018) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px)',
-              backgroundSize: '48px 48px',
-              pointerEvents: 'none',
-            }}
-          />
+        <div style={{ flex: '0 0 46%', position: 'relative', overflow: 'hidden', background: T.surface, borderRight: `1px solid ${T.border}`, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', padding: '40px 48px' }}>
+          <div style={{ position: 'absolute', top: -200, right: -200, width: 600, height: 600, borderRadius: '50%', background: 'radial-gradient(circle,rgba(255,107,43,.16) 0%,transparent 65%)', pointerEvents: 'none' }} />
+          <div style={{ position: 'absolute', bottom: -250, left: -120, width: 500, height: 500, borderRadius: '50%', background: 'radial-gradient(circle,rgba(79,140,255,.09) 0%,transparent 65%)', pointerEvents: 'none' }} />
+          <div style={{ position: 'absolute', inset: 0, backgroundImage: 'linear-gradient(rgba(255,255,255,.018) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px)', backgroundSize: '48px 48px', pointerEvents: 'none' }} />
 
           <Link href="/" className="lx-panel-content" style={{ ...row(12), textDecoration: 'none', position: 'relative', zIndex: 1 }}>
-            <div
-              style={{
-                width: 42,
-                height: 42,
-                borderRadius: 12,
-                background: 'linear-gradient(135deg,#ff6b2b,#ff9d5c)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: 20,
-                fontWeight: 900,
-                color: '#fff',
-                fontFamily: T.fontDisplay,
-                flexShrink: 0,
-                boxShadow: '0 6px 20px rgba(255,107,43,.4)',
-              }}
-            >
-              M
-            </div>
+            <div style={{ width: 42, height: 42, borderRadius: 12, background: 'linear-gradient(135deg,#ff6b2b,#ff9d5c)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, fontWeight: 900, color: '#fff', fontFamily: T.fontDisplay, flexShrink: 0, boxShadow: '0 6px 20px rgba(255,107,43,.4)' }}>M</div>
             <span style={{ fontFamily: T.fontDisplay, fontWeight: 800, fontSize: 22, color: T.text }}>Mercadox</span>
           </Link>
 
           <div className="lx-panel-content" style={{ position: 'relative', zIndex: 1 }}>
-
             <h2 style={{ fontFamily: T.fontDisplay, fontWeight: 800, fontSize: '2.4rem', lineHeight: 1.1, marginBottom: 18, letterSpacing: '-.02em' }}>
               Tu código digital,
               <br />
@@ -272,30 +196,14 @@ export default function LoginPage() {
             <p style={{ color: T.muted, fontSize: 15, lineHeight: 1.75, marginBottom: 36 }}>
               Accede a miles de gift cards, suscripciones y videojuegos con entrega instantánea y garantía total.
             </p>
-
             <div style={col(10)}>
               {[
-                { icon: '⚡', title: 'Entrega inmediata', sub: 'Tu código en menos de 2 minutos' },
-                { icon: '🔒', title: 'Pago 100% seguro', sub: 'Encriptación SSL de extremo a extremo' },
-                { icon: '🔄', title: 'Garantía total', sub: 'Reembolso si algo falla' },
+                { icon: '⚡', title: 'Entrega inmediata',  sub: 'Tu código en menos de 2 minutos'      },
+                { icon: '🔒', title: 'Pago 100% seguro',   sub: 'Encriptación SSL de extremo a extremo' },
+                { icon: '🔄', title: 'Garantía total',     sub: 'Reembolso si algo falla'               },
               ].map(({ icon, title, sub }) => (
                 <div key={title} className="lx-feat">
-                  <div
-                    style={{
-                      width: 38,
-                      height: 38,
-                      borderRadius: 11,
-                      background: 'rgba(255,107,43,.1)',
-                      border: '1px solid rgba(255,107,43,.2)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: 18,
-                      flexShrink: 0,
-                    }}
-                  >
-                    {icon}
-                  </div>
+                  <div style={{ width: 38, height: 38, borderRadius: 11, background: 'rgba(255,107,43,.1)', border: '1px solid rgba(255,107,43,.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18, flexShrink: 0 }}>{icon}</div>
                   <div>
                     <div style={{ fontSize: 14, fontWeight: 600, color: T.text, marginBottom: 2 }}>{title}</div>
                     <div style={{ fontSize: 12, color: T.muted }}>{sub}</div>
@@ -307,57 +215,21 @@ export default function LoginPage() {
         </div>
       )}
 
-      <div
-        style={{
-          flex: 1,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          padding: mobile ? '32px 20px' : '40px 48px',
-          minHeight: '100vh',
-          position: 'relative',
-          overflow: 'hidden',
-        }}
-      >
-        <div
-          style={{
-            position: 'absolute',
-            top: '20%',
-            left: '50%',
-            transform: 'translate(-50%,-50%)',
-            width: 500,
-            height: 500,
-            borderRadius: '50%',
-            background: 'radial-gradient(circle,rgba(255,107,43,.06) 0%,transparent 65%)',
-            pointerEvents: 'none',
-          }}
-        />
+      {/* ── Panel derecho: formulario ── */}
+      <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: mobile ? '32px 20px' : '40px 48px', minHeight: '100vh', position: 'relative', overflow: 'hidden' }}>
+        <div style={{ position: 'absolute', top: '20%', left: '50%', transform: 'translate(-50%,-50%)', width: 500, height: 500, borderRadius: '50%', background: 'radial-gradient(circle,rgba(255,107,43,.06) 0%,transparent 65%)', pointerEvents: 'none' }} />
 
         <div style={{ width: '100%', maxWidth: 420, position: 'relative', zIndex: 1 }}>
+
+          {/* Logo mobile */}
           {mobile && (
             <Link href="/" style={{ ...row(10), marginBottom: 36, textDecoration: 'none', display: 'flex' }}>
-              <div
-                style={{
-                  width: 36,
-                  height: 36,
-                  borderRadius: 10,
-                  background: 'linear-gradient(135deg,#ff6b2b,#ff9d5c)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  fontSize: 16,
-                  fontWeight: 900,
-                  color: '#fff',
-                  fontFamily: T.fontDisplay,
-                  flexShrink: 0,
-                }}
-              >
-                M
-              </div>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: 'linear-gradient(135deg,#ff6b2b,#ff9d5c)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 16, fontWeight: 900, color: '#fff', fontFamily: T.fontDisplay, flexShrink: 0 }}>M</div>
               <span style={{ fontFamily: T.fontDisplay, fontWeight: 800, fontSize: 19, color: T.text }}>Mercadox</span>
             </Link>
           )}
 
+          {/* Header */}
           <div className="lx-f1" style={{ marginBottom: 32 }}>
             <h1 style={{ fontFamily: T.fontDisplay, fontWeight: 800, fontSize: '1.95rem', lineHeight: 1.15, marginBottom: 8, letterSpacing: '-.02em' }}>
               Bienvenido de vuelta 👋
@@ -367,26 +239,17 @@ export default function LoginPage() {
             </p>
           </div>
 
+          {/* Error */}
           {error && (
-            <div
-              className="lx-f1"
-              style={{
-                background: 'rgba(239,68,68,.08)',
-                border: '1px solid rgba(239,68,68,.3)',
-                borderRadius: 12,
-                padding: '12px 16px',
-                marginBottom: 22,
-                display: 'flex',
-                alignItems: 'flex-start',
-                gap: 10,
-              }}
-            >
+            <div className="lx-f1" style={{ background: 'rgba(239,68,68,.08)', border: '1px solid rgba(239,68,68,.3)', borderRadius: 12, padding: '12px 16px', marginBottom: 22, display: 'flex', alignItems: 'flex-start', gap: 10 }}>
               <span style={{ fontSize: 15, flexShrink: 0 }}>⚠️</span>
               <span style={{ color: '#f87171', fontSize: 13, lineHeight: 1.5 }}>{error}</span>
             </div>
           )}
 
           <form onSubmit={handleSubmit} noValidate style={col(0)}>
+
+            {/* Email */}
             <div className="lx-f2" style={{ marginBottom: 18 }}>
               <label className="lx-label">Correo electrónico</label>
               <input
@@ -402,6 +265,7 @@ export default function LoginPage() {
               {emailInvalid && <span style={{ color: '#f87171', fontSize: 12, marginTop: 5, display: 'block' }}>Ingresa un correo válido</span>}
             </div>
 
+            {/* Contraseña */}
             <div className="lx-f3" style={{ marginBottom: 10 }}>
               <label className="lx-label">Contraseña</label>
               <div style={{ position: 'relative' }}>
@@ -419,19 +283,7 @@ export default function LoginPage() {
                 <button
                   type="button"
                   onClick={() => setShowPass(!showPass)}
-                  style={{
-                    position: 'absolute',
-                    right: 14,
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    color: T.muted,
-                    fontSize: 18,
-                    padding: 2,
-                    lineHeight: 1,
-                  }}
+                  style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: T.muted, fontSize: 18, padding: 2, lineHeight: 1 }}
                   aria-label={showPass ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                 >
                   {showPass ? '🙈' : '👁️'}
@@ -440,6 +292,7 @@ export default function LoginPage() {
               {passInvalid && <span style={{ color: '#f87171', fontSize: 12, marginTop: 5, display: 'block' }}>Mínimo 6 caracteres</span>}
             </div>
 
+            {/* Forgot password */}
             <div className="lx-f4" style={{ textAlign: 'right', marginBottom: 26 }}>
               <Link
                 href="/recover-password"
@@ -451,13 +304,11 @@ export default function LoginPage() {
               </Link>
             </div>
 
+            {/* Submit */}
             <div className="lx-f5">
               <button type="submit" className="lx-btn-primary" disabled={loading}>
                 {loading ? (
-                  <>
-                    <div className="lx-spinner" />
-                    <span>Ingresando...</span>
-                  </>
+                  <><div className="lx-spinner" /><span>Ingresando...</span></>
                 ) : (
                   'Iniciar sesión →'
                 )}
@@ -471,7 +322,6 @@ export default function LoginPage() {
             <div style={{ flex: 1, height: 1, background: T.border }} />
           </div>
 
-
           <p className="lx-f6" style={{ textAlign: 'center', color: T.muted, fontSize: 14, marginTop: 28 }}>
             ¿No tienes cuenta?{' '}
             <Link
@@ -484,17 +334,7 @@ export default function LoginPage() {
             </Link>
           </p>
 
-          <div
-            style={{
-              ...row(7),
-              justifyContent: 'center',
-              marginTop: 28,
-              padding: '12px 16px',
-              background: 'rgba(255,255,255,.02)',
-              border: `1px solid ${T.border}`,
-              borderRadius: 10,
-            }}
-          >
+          <div style={{ ...row(7), justifyContent: 'center', marginTop: 28, padding: '12px 16px', background: 'rgba(255,255,255,.02)', border: `1px solid ${T.border}`, borderRadius: 10 }}>
             <span style={{ fontSize: 13 }}>🔒</span>
             <span style={{ color: T.muted, fontSize: 12 }}>Conexión segura · Encriptación SSL 256-bit</span>
           </div>
