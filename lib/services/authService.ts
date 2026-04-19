@@ -17,17 +17,6 @@ export const authService = {
     return response;
   },
 
-  async logout(): Promise<void> {
-    try {
-      await apiClient.post('/auth/logout');
-    } finally {
-      if (typeof window !== 'undefined') {
-        localStorage.removeItem('mercadox_token');
-        localStorage.removeItem('mercadox_refresh_token');
-      }
-    }
-  },
-
   async register(data: RegisterRequest): Promise<void> {
     await apiClient.post('/auth/register', data);
   },
