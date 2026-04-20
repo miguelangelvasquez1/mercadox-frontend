@@ -156,8 +156,8 @@ export default function NavbarConsumer() {
   }, [isAuthenticated]);
 
   const handleLogout = async () => {
-    logout();        // limpia el contexto
-    router.push('/'); // redirige siempre
+    logout();        
+    router.push('/'); 
 };
 
   const formatBalance = (n: number) =>

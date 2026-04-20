@@ -32,7 +32,6 @@ export default function SellerPage() {
   }, [router]);
 
   const handleLogout = () => {
-    authService.logout();
     if (typeof window !== 'undefined') {
       localStorage.removeItem('mercadox_role');
     }

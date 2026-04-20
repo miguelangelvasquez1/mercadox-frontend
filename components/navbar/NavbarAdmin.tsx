@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth/AuthContext';
-import { authService } from '@/lib/services/authService';
 
 const T = {
   bg:          '#07080f',
@@ -79,7 +78,6 @@ export default function NavbarAdmin() {
   const [mobileOpen, setMobileOpen] = useState(false);
 
   const handleLogout = async () => {
-    await authService.logout();
     logout();
     router.push('/');
   };
