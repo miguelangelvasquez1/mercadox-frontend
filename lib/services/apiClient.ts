@@ -1,11 +1,11 @@
 import axios, { AxiosInstance, AxiosRequestConfig, AxiosResponse, InternalAxiosRequestConfig } from 'axios';
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080';
+const BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
 class ApiClient {
   private client: AxiosInstance;
 
-  constructor(baseURL: string = BASE_URL) {
+  constructor(baseURL: string | undefined = BASE_URL) {
     this.client = axios.create({
       baseURL,
       timeout: 15000,
