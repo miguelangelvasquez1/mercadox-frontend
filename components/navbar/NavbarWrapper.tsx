@@ -9,4 +9,4 @@ export default function NavbarWrapper() {
 
   if (role === 'ADMIN')  return <NavbarAdmin />;
   return <NavbarConsumer />;         // CONSUMER o SELLER
-}
+} 
