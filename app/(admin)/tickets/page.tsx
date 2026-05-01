@@ -130,7 +130,7 @@ export default function AdminTicketDetailPage() {
     <div className="tk-page" style={{ padding: '32px 20px', textAlign: 'center' }}>
       <style>{SHARED_STYLES}</style>
       <p style={{ color: T.red }}>{error}</p>
-      <Link href="/admin/tickets" className="tk-btn tk-btn-ghost" style={{ marginTop: 16, display: 'inline-flex' }}>← Volver</Link>
+      <Link href="/tickets" className="tk-btn tk-btn-ghost" style={{ marginTop: 16, display: 'inline-flex' }}>← Volver</Link>
     </div>
   );
 
@@ -144,7 +144,7 @@ export default function AdminTicketDetailPage() {
       <div style={{ maxWidth: 900, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 20 }}>
 
         {/* Back */}
-        <Link href="/admin/tickets" className="tk-btn tk-btn-ghost tk-f1" style={{ display: 'inline-flex', alignSelf: 'flex-start' }}>
+        <Link href="/tickets" className="tk-btn tk-btn-ghost tk-f1" style={{ display: 'inline-flex', alignSelf: 'flex-start' }}>
           ← Todos los tickets
         </Link>
 

@@ -6,6 +6,8 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/auth/AuthContext';
 import { userService } from '@/lib/services/userService';
 import { useCart } from '@/lib/cart/CartContext';
+import UserChatWindow from '@/components/chat/UserChatWindow';
+import { chatService } from '@/lib/services/chatService';
 
 const T = {
   bg:          '#07080f',
@@ -123,6 +125,17 @@ const STYLES = `
   .nav-btn-register:hover { box-shadow: 0 0 28px rgba(255,107,43,.4); transform: translateY(-1px); }
 
   .nav-divider { width: 1px; height: 20px; background: rgba(255,255,255,0.08); margin: 0 2px; }
+
+  /* Chat button pulse animation when there are unread messages */
+  @keyframes chat-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(255,107,43,.4); }
+    50%       { box-shadow: 0 0 0 6px rgba(255,107,43,.0); }
+  }
+  .nav-chat-btn-unread {
+    animation: chat-pulse 2s ease infinite;
+    border-color: rgba(255,107,43,.45) !important;
+    background: rgba(255,107,43,.08) !important;
+  }
 `;
 
 const AUTH_LINKS = [
@@ -139,11 +152,12 @@ const PUBLIC_LINKS = [
 export default function NavbarConsumer() {
   const router                              = useRouter();
   const { logout, isAuthenticated }         = useAuth();
-  const { totalItems }                      = useCart(); // 👈 NUEVO
+  const { totalItems }                      = useCart();
   const [dropOpen, setDropOpen]             = useState(false);
   const [mobileOpen, setMobileOpen]         = useState(false);
   const [balance, setBalance]               = useState<number | null>(null);
   const [balanceLoading, setBalanceLoading] = useState(false);
+  const [chatUnread, setChatUnread]         = useState(0);
 
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -155,10 +169,27 @@ export default function NavbarConsumer() {
       .finally(() => setBalanceLoading(false));
   }, [isAuthenticated]);
 
+  // Poll unread chat count
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const fetchUnread = async () => {
+      try {
+        const res = await chatService.getUserUnread();
+        const data = await res;
+        setChatUnread(data ?? 0);
+      } catch { /* silent */ }
+    };
+
+    fetchUnread();
+    const interval = setInterval(fetchUnread, 10_000);
+    return () => clearInterval(interval);
+  }, [isAuthenticated]);
+
   const handleLogout = async () => {
-    logout();        
-    router.push('/'); 
-};
+    logout();
+    router.push('/');
+  };
 
   const formatBalance = (n: number) =>
     n.toLocaleString('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
@@ -169,38 +200,39 @@ export default function NavbarConsumer() {
     <>
       <style>{STYLES}</style>
 
-      <nav style={{ position: 'sticky', top: 0, zIndex: 100,
+      <nav style={{
+        position: 'sticky', top: 0, zIndex: 100,
         backdropFilter: 'blur(20px)', WebkitBackdropFilter: 'blur(20px)',
         background: 'rgba(7,8,15,0.88)', borderBottom: `1px solid ${T.border}`,
-        fontFamily: T.fontBody }}>
-        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 20px', height: 64,
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16 }}>
+        fontFamily: T.fontBody,
+      }}>
+        <div style={{
+          maxWidth: 1200, margin: '0 auto', padding: '0 20px', height: 64,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 16,
+        }}>
 
           {/* Logo */}
-          <Link href="/products" style={{ display: 'flex', alignItems: 'center', gap: 10,
-            textDecoration: 'none', flexShrink: 0 }}>
-            <div style={{ width: 36, height: 36, borderRadius: 10,
-              background: 'linear-gradient(135deg,#ff6b2b,#ff9d5c)', display: 'flex',
-              alignItems: 'center', justifyContent: 'center', color: '#fff',
-              fontWeight: 900, fontFamily: T.fontDisplay, fontSize: 17 }}>M</div>
-            <span style={{ fontFamily: T.fontDisplay, fontWeight: 800, fontSize: 19,
-              color: T.text }}>Mercadox</span>
+          <Link href="/products" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', flexShrink: 0 }}>
+            <div style={{
+              width: 36, height: 36, borderRadius: 10,
+              background: 'linear-gradient(135deg,#ff6b2b,#ff9d5c)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: '#fff', fontWeight: 900, fontFamily: T.fontDisplay, fontSize: 17,
+            }}>M</div>
+            <span style={{ fontFamily: T.fontDisplay, fontWeight: 800, fontSize: 19, color: T.text }}>Mercadox</span>
           </Link>
 
           {/* Desktop links */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 22, flex: 1,
-            justifyContent: 'center' }} className="nav-hide-mobile">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 22, flex: 1, justifyContent: 'center' }} className="nav-hide-mobile">
             {navLinks.map(({ href, label }) => (
-              <Link key={href} href={href}
-                className={isAuthenticated ? 'nav-con-link' : 'nav-pub-link'}>
+              <Link key={href} href={href} className={isAuthenticated ? 'nav-con-link' : 'nav-pub-link'}>
                 {label}
               </Link>
             ))}
           </div>
 
           {/* Right side */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}
-            className="nav-hide-mobile">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }} className="nav-hide-mobile">
 
             {isAuthenticated ? (
               <>
@@ -217,35 +249,48 @@ export default function NavbarConsumer() {
 
                 <div className="nav-divider" />
 
+                {/* Cart */}
                 <Link href="/cart" className="nav-con-icon-btn" title="Ver carrito">
                   🛒
                   {totalItems > 0 && (
                     <span style={{
-                      position:       'absolute',
-                      top:            -6,
-                      right:          -6,
-                      minWidth:       17,
-                      height:         17,
-                      borderRadius:   '50%',
-                      background:     T.accent,
-                      color:          '#fff',
-                      fontSize:       10,
-                      fontWeight:     700,
-                      display:        'flex',
-                      alignItems:     'center',
-                      justifyContent: 'center',
-                      border:         `2px solid ${T.bg}`,
-                      padding:        '0 3px',
-                      lineHeight:     1,
+                      position: 'absolute', top: -6, right: -6,
+                      minWidth: 17, height: 17, borderRadius: '50%',
+                      background: T.accent, color: '#fff', fontSize: 10, fontWeight: 700,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      border: `2px solid ${T.bg}`, padding: '0 3px', lineHeight: 1,
                     }}>
                       {totalItems > 99 ? '99+' : totalItems}
                     </span>
                   )}
                 </Link>
 
+                {/* Chat button — opens UserChatWindow FAB area */}
+                <button
+                  className={`nav-con-icon-btn${chatUnread > 0 ? ' nav-chat-btn-unread' : ''}`}
+                  title="Chat de soporte"
+                  onClick={() => {
+                    // Trigger the FAB click — the FAB is rendered below
+                    document.getElementById('mercadox-chat-fab')?.click();
+                  }}
+                  style={{ position: 'relative' }}
+                >
+                  💬
+                  {chatUnread > 0 && (
+                    <span style={{
+                      position: 'absolute', top: -6, right: -6,
+                      minWidth: 17, height: 17, borderRadius: '50%',
+                      background: '#f87171', color: '#fff', fontSize: 10, fontWeight: 700,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      border: `2px solid ${T.bg}`, padding: '0 3px', lineHeight: 1,
+                    }}>
+                      {chatUnread > 9 ? '9+' : chatUnread}
+                    </span>
+                  )}
+                </button>
+
                 {/* Ticket shortcut */}
-                <Link href="/tickets/new" className="nav-con-icon-btn"
-                  title="Abrir ticket de soporte">🎟️</Link>
+                <Link href="/tickets/new" className="nav-con-icon-btn" title="Abrir ticket de soporte">🎟️</Link>
 
                 {/* Avatar + dropdown */}
                 <div style={{ position: 'relative' }}>
@@ -254,18 +299,14 @@ export default function NavbarConsumer() {
                   </div>
                   {dropOpen && (
                     <>
-                      <div style={{ position: 'fixed', inset: 0, zIndex: 40 }}
-                        onClick={() => setDropOpen(false)} />
+                      <div style={{ position: 'fixed', inset: 0, zIndex: 40 }} onClick={() => setDropOpen(false)} />
                       <div className="nav-con-dropdown">
-                        <div style={{ padding: '10px 12px 12px',
-                          borderBottom: `1px solid ${T.border}`, marginBottom: 6 }}>
+                        <div style={{ padding: '10px 12px 12px', borderBottom: `1px solid ${T.border}`, marginBottom: 6 }}>
                           <div style={{ color: T.text, fontWeight: 600, fontSize: 14 }}>Mi cuenta</div>
                           <div style={{ color: T.muted, fontSize: 12, marginTop: 2 }}>Consumer</div>
                         </div>
-                        <Link href="/tickets/my" className="nav-con-dd-item"
-                          onClick={() => setDropOpen(false)}>🎫 Mis tickets</Link>
-                        <Link href="/payment" className="nav-con-dd-item"
-                          onClick={() => setDropOpen(false)}>💳 Historial de pagos</Link>
+                        <Link href="/tickets/my" className="nav-con-dd-item" onClick={() => setDropOpen(false)}>🎫 Mis tickets</Link>
+                        <Link href="/payment" className="nav-con-dd-item" onClick={() => setDropOpen(false)}>💳 Historial de pagos</Link>
                         <div style={{ height: 1, background: T.border, margin: '6px 4px' }} />
                         <button className="nav-con-dd-item danger" onClick={handleLogout}>
                           🚪 Cerrar sesión
@@ -284,31 +325,26 @@ export default function NavbarConsumer() {
           </div>
 
           {/* Mobile hamburger */}
-          <button onClick={() => setMobileOpen(true)}
-            style={{ background: 'none', border: 'none', cursor: 'pointer',
-              color: T.text, fontSize: 22, padding: 4, display: 'none' }}
-            className="nav-show-mobile" aria-label="Abrir menú">☰</button>
+          <button
+            onClick={() => setMobileOpen(true)}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.text, fontSize: 22, padding: 4, display: 'none' }}
+            className="nav-show-mobile"
+            aria-label="Abrir menú"
+          >☰</button>
         </div>
       </nav>
 
       {/* Mobile menu */}
       {mobileOpen && (
         <div className="nav-mobile-menu">
-          <div style={{ display: 'flex', justifyContent: 'space-between',
-            alignItems: 'center', marginBottom: 20 }}>
-            <span style={{ fontFamily: T.fontDisplay, fontWeight: 800,
-              fontSize: 18, color: T.text }}>Menú</span>
-            <button onClick={() => setMobileOpen(false)}
-              style={{ background: 'none', border: 'none', cursor: 'pointer',
-                color: T.muted, fontSize: 24 }}>✕</button>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+            <span style={{ fontFamily: T.fontDisplay, fontWeight: 800, fontSize: 18, color: T.text }}>Menú</span>
+            <button onClick={() => setMobileOpen(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: T.muted, fontSize: 24 }}>✕</button>
           </div>
 
           {navLinks.map(({ href, label }) => (
             <Link key={href} href={href} onClick={() => setMobileOpen(false)}
-              style={{ padding: '14px 16px', borderRadius: 12, color: T.text, fontSize: 15,
-                fontWeight: 500, textDecoration: 'none', background: T.surface,
-                border: `1px solid ${T.border}` }}>
-              {/* 👇 NUEVO: badge en el link de carrito del menú mobile */}
+              style={{ padding: '14px 16px', borderRadius: 12, color: T.text, fontSize: 15, fontWeight: 500, textDecoration: 'none', background: T.surface, border: `1px solid ${T.border}` }}>
               {href === '/cart' && totalItems > 0
                 ? `🛒 Carrito (${totalItems > 99 ? '99+' : totalItems})`
                 : label}
@@ -319,34 +355,48 @@ export default function NavbarConsumer() {
 
           {isAuthenticated ? (
             <>
+              {/* Chat button (mobile) */}
+              <button
+                onClick={() => {
+                  setMobileOpen(false);
+                  setTimeout(() => document.getElementById('mercadox-chat-fab')?.click(), 100);
+                }}
+                style={{
+                  padding: '14px 16px', borderRadius: 12, color: T.text, fontSize: 15,
+                  fontWeight: 500, textAlign: 'left', background: T.surface,
+                  border: `1px solid ${chatUnread > 0 ? 'rgba(255,107,43,.4)' : T.border}`,
+                  cursor: 'pointer', fontFamily: T.fontBody, display: 'flex', gap: 10, alignItems: 'center',
+                }}
+              >
+                💬 Chat de soporte
+                {chatUnread > 0 && (
+                  <span style={{
+                    marginLeft: 'auto', background: '#f87171', color: '#fff',
+                    fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 20,
+                  }}>
+                    {chatUnread} nuevo{chatUnread !== 1 ? 's' : ''}
+                  </span>
+                )}
+              </button>
+
               {balance !== null && !balanceLoading && (
-                <div style={{ padding: '14px 16px', borderRadius: 12,
-                  background: 'rgba(34,216,122,.07)', border: '1px solid rgba(34,216,122,.22)',
-                  color: '#22d87a', fontSize: 14, fontWeight: 600 }}>
+                <div style={{ padding: '14px 16px', borderRadius: 12, background: 'rgba(34,216,122,.07)', border: '1px solid rgba(34,216,122,.22)', color: '#22d87a', fontSize: 14, fontWeight: 600 }}>
                   💰 Saldo: {formatBalance(balance)}
                 </div>
               )}
               <button onClick={handleLogout}
-                style={{ padding: '14px 16px', borderRadius: 12, color: '#f87171',
-                  fontSize: 15, fontWeight: 500, textAlign: 'left',
-                  background: 'rgba(239,68,68,.06)', border: '1px solid rgba(239,68,68,.2)',
-                  cursor: 'pointer', fontFamily: T.fontBody }}>
+                style={{ padding: '14px 16px', borderRadius: 12, color: '#f87171', fontSize: 15, fontWeight: 500, textAlign: 'left', background: 'rgba(239,68,68,.06)', border: '1px solid rgba(239,68,68,.2)', cursor: 'pointer', fontFamily: T.fontBody }}>
                 🚪 Cerrar sesión
               </button>
             </>
           ) : (
             <>
               <Link href="/login" onClick={() => setMobileOpen(false)}
-                style={{ padding: '14px 16px', borderRadius: 12, color: T.text, fontSize: 15,
-                  fontWeight: 500, textDecoration: 'none', textAlign: 'center',
-                  background: T.surface, border: `1px solid ${T.border}` }}>
+                style={{ padding: '14px 16px', borderRadius: 12, color: T.text, fontSize: 15, fontWeight: 500, textDecoration: 'none', textAlign: 'center', background: T.surface, border: `1px solid ${T.border}` }}>
                 Iniciar sesión
               </Link>
               <Link href="/register" onClick={() => setMobileOpen(false)}
-                style={{ padding: '14px 16px', borderRadius: 12, color: '#fff', fontSize: 15,
-                  fontWeight: 600, textDecoration: 'none', textAlign: 'center',
-                  background: 'linear-gradient(135deg,#ff6b2b,#ff9d5c)',
-                  boxShadow: '0 0 20px rgba(255,107,43,.25)' }}>
+                style={{ padding: '14px 16px', borderRadius: 12, color: '#fff', fontSize: 15, fontWeight: 600, textDecoration: 'none', textAlign: 'center', background: 'linear-gradient(135deg,#ff6b2b,#ff9d5c)', boxShadow: '0 0 20px rgba(255,107,43,.25)' }}>
                 Crear cuenta
               </Link>
             </>
@@ -363,6 +413,19 @@ export default function NavbarConsumer() {
           .nav-show-mobile { display: none !important; }
         }
       `}</style>
+
+      {/* Floating chat window — rendered for authenticated users */}
+      <UserChatWindowWrapper isAuthenticated={isAuthenticated} />
     </>
+  );
+}
+
+// Wrapper that adds the id to the FAB so the navbar button can trigger it
+function UserChatWindowWrapper({ isAuthenticated }: { isAuthenticated: boolean }) {
+  if (!isAuthenticated) return null;
+  return (
+    <div id="mercadox-chat-wrapper">
+      <UserChatWindow isAuthenticated={isAuthenticated} />
+    </div>
   );
 }

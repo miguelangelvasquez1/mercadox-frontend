@@ -143,7 +143,7 @@ export default function RegisterPage() {
       const response = await authService.login({ email: form.email, password: form.password });
       login(response.accessToken, response.role);
 
-      if (response.role === 'ADMIN')    router.push('/admin/postSaleDashboard');
+      if (response.role === 'ADMIN')    router.push('/postSaleDashboard');
       else                              router.push('/products');
 
     } catch (err: unknown) {
@@ -310,7 +310,7 @@ export default function RegisterPage() {
 
           <p className="lx-f6" style={{ textAlign: 'center', color: T.muted, fontSize: 14, marginTop: 24 }}>
             ¿Ya tienes cuenta?{' '}
-            <Link href="/auth/login" style={{ color: T.accent, fontWeight: 700, textDecoration: 'none' }}
+            <Link href="/login" style={{ color: T.accent, fontWeight: 700, textDecoration: 'none' }}
               onMouseEnter={e => (e.currentTarget.style.textDecoration = 'underline')}
               onMouseLeave={e => (e.currentTarget.style.textDecoration = 'none')}>
               Inicia sesión

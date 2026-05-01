@@ -155,7 +155,7 @@ export default function LoginPage() {
       // AuthContext actualiza estado global + localStorage en una sola llamada
       login(response.accessToken, response.role);
 
-      if (response.role === 'ADMIN')         router.push('/admin/postSaleDashboard');
+      if (response.role === 'ADMIN')         router.push('/postSaleDashboard');
       else if (response.role === 'CONSUMER') router.push('/products');
       else if (response.role === 'SELLER')   router.push('/seller');
       else setError('Rol de usuario no soportado por el frontend.');

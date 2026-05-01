@@ -274,7 +274,7 @@ function ResetPasswordForm() {
               <div className="lx-f3">
                 <button
                   className="lx-btn-primary"
-                  onClick={() => router.push('/auth/login')}
+                  onClick={() => router.push('/login')}
                 >
                   Ir al inicio de sesión →
                 </button>

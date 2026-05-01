@@ -95,12 +95,13 @@ export default function PostSaleDashboard() {
     },
   ];
 
-  const QUICK_ACTIONS = [
-    { href: '/admin/tickets?status=OPEN',      icon: '📬', label: 'Ver tickets abiertos',   color: '#60a5fa' },
-    { href: '/admin/tickets?status=VALIDATING',icon: '🔍', label: 'En revisión',             color: '#fbbf24' },
-    { href: '/admin/tickets',                  icon: '🎫', label: 'Todos los tickets',       color: T.accentSoft },
-    { href: '/products',                       icon: '📦', label: 'Gestionar productos',     color: T.green   },
-  ];
+const QUICK_ACTIONS = [
+  { href: '/tickets?status=OPEN',      icon: '📬', label: 'Ver tickets abiertos',   color: '#60a5fa' },
+  { href: '/tickets?status=VALIDATING',icon: '🔍', label: 'En revisión',             color: '#fbbf24' },
+  { href: '/chat',                     icon: '💬', label: 'Chat con usuarios',       color: '#ff6b2b' },
+  { href: '/tickets',                  icon: '🎫', label: 'Todos los tickets',       color: T.accentSoft },
+  { href: '/products',                       icon: '📦', label: 'Gestionar productos',     color: T.green   },
+];
 
   return (
     <div className="tk-page" style={{ padding: '32px 20px' }}>
@@ -126,7 +127,7 @@ export default function PostSaleDashboard() {
           {KPIS.map(({ label, value, icon, color, bg, filterValue }) => (
             <Link
               key={label}
-              href={filterValue ? `/admin/tickets?status=${filterValue}` : '/admin/tickets'}
+              href={filterValue ? `/tickets?status=${filterValue}` : '/tickets'}
               style={{ textDecoration: 'none' }}
             >
               <div
@@ -179,7 +180,7 @@ export default function PostSaleDashboard() {
             <h2 style={{ fontFamily: T.fontDisplay, fontWeight: 700, fontSize: '1.1rem', color: T.text }}>
               Tickets recientes
             </h2>
-            <Link href="/admin/tickets" className="tk-btn tk-btn-ghost" style={{ fontSize: 12, padding: '6px 14px' }}>
+            <Link href="/tickets" className="tk-btn tk-btn-ghost" style={{ fontSize: 12, padding: '6px 14px' }}>
               Ver todos →
             </Link>
           </div>
@@ -228,7 +229,7 @@ export default function PostSaleDashboard() {
                     <span style={{ color: T.muted, fontSize: 12 }}>{formatDate(ticket.createdAt)}</span>
 
                     <Link
-                      href={`/admin/tickets/${ticket.id}`}
+                      href={`/tickets/${ticket.id}`}
                       className="tk-btn tk-btn-ghost"
                       style={{ fontSize: 12, padding: '6px 14px', justifySelf: 'end' }}
                     >

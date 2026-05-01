@@ -262,7 +262,7 @@ export default function RecoverPasswordPage() {
                   </p>
                 </div>
 
-                <Link href="/auth/login" className="lx-btn-ghost" style={{ width: '100%', boxSizing: 'border-box' }}>
+                <Link href="/login" className="lx-btn-ghost" style={{ width: '100%', boxSizing: 'border-box' }}>
                   ← Volver al inicio de sesión
                 </Link>
               </div>
@@ -314,7 +314,7 @@ export default function RecoverPasswordPage() {
               <p className="lx-f4" style={{ textAlign: 'center', color: T.muted, fontSize: 14, marginTop: 28 }}>
                 ¿Recordaste tu contraseña?{' '}
                 <Link
-                  href="/auth/login"
+                  href="/login"
                   style={{ color: T.accent, fontWeight: 700, textDecoration: 'none' }}
                   onMouseEnter={(e) => (e.currentTarget.style.textDecoration = 'underline')}
                   onMouseLeave={(e) => (e.currentTarget.style.textDecoration = 'none')}
