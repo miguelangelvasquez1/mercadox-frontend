@@ -15,7 +15,7 @@ interface KPI {
   filterValue: string;
 }
 
-export default function PostSaleDashboard() {
+export default function dashboard() {
   const [tickets, setTickets]   = useState<TicketSummary[]>([]);
   const [loading, setLoading]   = useState(true);
   const [total, setTotal]       = useState(0);
@@ -100,7 +100,7 @@ const QUICK_ACTIONS = [
   { href: '/tickets?status=VALIDATING',icon: '🔍', label: 'En revisión',             color: '#fbbf24' },
   { href: '/chat',                     icon: '💬', label: 'Chat con usuarios',       color: '#ff6b2b' },
   { href: '/tickets',                  icon: '🎫', label: 'Todos los tickets',       color: T.accentSoft },
-  { href: '/products',                       icon: '📦', label: 'Gestionar productos',     color: T.green   },
+  { href: '/manage-products',                       icon: '📦', label: 'Gestionar productos',     color: T.green   },
 ];
 
   return (

@@ -143,7 +143,7 @@ export default function RegisterPage() {
       const response = await authService.login({ email: form.email, password: form.password });
       login(response.accessToken, response.role);
 
-      if (response.role === 'ADMIN')    router.push('/postSaleDashboard');
+      if (response.role === 'ADMIN')    router.push('/dashboard');
       else                              router.push('/products');
 
     } catch (err: unknown) {

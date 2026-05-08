@@ -21,3 +21,24 @@ export interface ProductDetail {
   categoryName: string;
   stock: number;
 }
+
+export interface CreateProductStockRequestDTO {
+  code: string;
+  expirationDate: string | null;
+}
+
+export interface CreateProductRequestDTO {
+  name : string;
+  price : number;
+  stockItems : CreateProductStockRequestDTO[];
+  productCategoryId: number;
+  description: string;
+}
+
+export interface BulkStockResponseDTO {
+  totalProcessed : number;
+  successfullyAdded : number;
+  failed : number;
+  errors : string[];
+  processedAt : string;
+}
