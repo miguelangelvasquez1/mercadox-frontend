@@ -96,11 +96,11 @@ export default function dashboard() {
   ];
 
 const QUICK_ACTIONS = [
-  { href: '/tickets?status=OPEN',      icon: '📬', label: 'Ver tickets abiertos',   color: '#60a5fa' },
-  { href: '/tickets?status=VALIDATING',icon: '🔍', label: 'En revisión',             color: '#fbbf24' },
-  { href: '/chat',                     icon: '💬', label: 'Chat con usuarios',       color: '#ff6b2b' },
-  { href: '/tickets',                  icon: '🎫', label: 'Todos los tickets',       color: T.accentSoft },
-  { href: '/manage-products',                       icon: '📦', label: 'Gestionar productos',     color: T.green   },
+  { href: '/admin/tickets?status=OPEN',      icon: '📬', label: 'Ver tickets abiertos',   color: '#60a5fa' },
+  { href: '/admin/tickets?status=VALIDATING',icon: '🔍', label: 'En revisión',             color: '#fbbf24' },
+  { href: '/admin/chat',                     icon: '💬', label: 'Chat con usuarios',       color: '#ff6b2b' },
+  { href: '/admin/tickets',                  icon: '🎫', label: 'Todos los tickets',       color: T.accentSoft },
+  { href: '/admin/manage-products',                       icon: '📦', label: 'Gestionar productos',     color: T.green   },
 ];
 
   return (
@@ -127,7 +127,7 @@ const QUICK_ACTIONS = [
           {KPIS.map(({ label, value, icon, color, bg, filterValue }) => (
             <Link
               key={label}
-              href={filterValue ? `/tickets?status=${filterValue}` : '/tickets'}
+              href={filterValue ? `/admin/tickets?status=${filterValue}` : '/admin/tickets'}
               style={{ textDecoration: 'none' }}
             >
               <div
@@ -229,7 +229,7 @@ const QUICK_ACTIONS = [
                     <span style={{ color: T.muted, fontSize: 12 }}>{formatDate(ticket.createdAt)}</span>
 
                     <Link
-                      href={`/tickets/${ticket.id}`}
+                      href={`/admin/tickets/${ticket.id}`}
                       className="tk-btn tk-btn-ghost"
                       style={{ fontSize: 12, padding: '6px 14px', justifySelf: 'end' }}
                     >

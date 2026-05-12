@@ -90,7 +90,7 @@ export default function NavbarAdmin() {
         <div style={{ maxWidth: 1300, margin: '0 auto', padding: '0 20px', height: 62, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
 
           {/* Logo + Admin badge */}
-          <Link href="/dashboard" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', flexShrink: 0 }}>
+          <Link href="/admin/dashboard" style={{ display: 'flex', alignItems: 'center', gap: 10, textDecoration: 'none', flexShrink: 0 }}>
             <div style={{ width: 34, height: 34, borderRadius: 9, background: 'linear-gradient(135deg,#ff6b2b,#ff9d5c)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 900, fontFamily: T.fontDisplay, fontSize: 16 }}>M</div>
             <div>
               <span style={{ fontFamily: T.fontDisplay, fontWeight: 800, fontSize: 17, color: T.text }}>Mercadox</span>

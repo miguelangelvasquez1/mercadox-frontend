@@ -1,8 +1,7 @@
 'use client';
-
 import { FormEvent, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
-import { useParams } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { ticketService } from '@/lib/services/ticketservice';
 import type { TicketDetail } from '@/lib/types/ticket.types';
 import {
@@ -14,24 +13,37 @@ import {
 type AdminAction = 'validate' | 'replacement' | 'refund' | 'reject' | 'invalid' | null;
 
 export default function AdminTicketDetailPage() {
-  const params               = useParams();
-  const ticketId             = Number(params.id);
-  const [ticket, setTicket]  = useState<TicketDetail | null>(null);
-  const [loading, setLoading]= useState(true);
-  const [error, setError]    = useState('');
-  const [action, setAction]  = useState<AdminAction>(null);
-  const [working, setWorking]= useState(false);
-  const [message, setMessage]= useState('');
-  const [sending, setSending]= useState(false);
+  const params  = useParams();
+  const router  = useRouter();
+
+  // ── Fix: params.id puede ser string | string[] | undefined ──────────────
+  const rawId    = Array.isArray(params.id) ? params.id[0] : params.id;
+  const ticketId = rawId ? Number(rawId) : NaN;
+
+  const [ticket,  setTicket]  = useState<TicketDetail | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error,   setError]   = useState('');
+  const [action,  setAction]  = useState<AdminAction>(null);
+  const [working, setWorking] = useState(false);
+  const [message, setMessage] = useState('');
+  const [sending, setSending] = useState(false);
 
   // Action form fields
-  const [adminNotes, setAdminNotes]         = useState('');
-  const [stockId, setStockId]               = useState('');
-  const [justification, setJustification]   = useState('');
+  const [adminNotes,     setAdminNotes]     = useState('');
+  const [stockId,        setStockId]        = useState('');
+  const [justification,  setJustification]  = useState('');
 
   const bottomRef = useRef<HTMLDivElement>(null);
 
+  // ── Load ticket ──────────────────────────────────────────────────────────
   useEffect(() => {
+    // Guard: si el id no es un número válido, ni intentamos el fetch
+    if (isNaN(ticketId) || ticketId <= 0) {
+      setError('ID de ticket inválido. Vuelve al listado.');
+      setLoading(false);
+      return;
+    }
+
     const load = async () => {
       try {
         const data = await ticketService.getTicketDetail(ticketId);
@@ -42,14 +54,17 @@ export default function AdminTicketDetailPage() {
         setLoading(false);
       }
     };
+
     void load();
   }, [ticketId]);
 
+  // ── Auto-scroll al último mensaje ────────────────────────────────────────
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [ticket?.messages]);
 
   const refresh = async () => {
+    if (isNaN(ticketId) || ticketId <= 0) return;
     const data = await ticketService.getTicketDetail(ticketId);
     setTicket(data);
   };
@@ -58,39 +73,52 @@ export default function AdminTicketDetailPage() {
     ? ['RESOLVED', 'REJECTED', 'CLOSED_INVALID'].includes(ticket.status)
     : false;
 
-  // ── Admin actions ──────────────────────────────────────────────────────────
-
+  // ── Admin actions ────────────────────────────────────────────────────────
   const handleAction = async (e: FormEvent) => {
     e.preventDefault();
     if (!ticket || !action) return;
     setWorking(true);
     setError('');
+
     try {
       switch (action) {
         case 'validate':
           await ticketService.validateTicket(ticketId, { adminNotes: adminNotes || undefined });
           break;
+
         case 'replacement':
-          if (!stockId) { setError('Ingresa el ID del nuevo stock.'); setWorking(false); return; }
+          if (!stockId) {
+            setError('Ingresa el ID del nuevo stock.');
+            setWorking(false);
+            return;
+          }
           await ticketService.resolveWithReplacement(ticketId, {
             newProductStockId: Number(stockId),
             adminNotes: adminNotes || undefined,
           });
           break;
+
         case 'refund':
           await ticketService.resolveWithRefund(ticketId, { adminNotes: adminNotes || undefined });
           break;
+
         case 'reject':
-          if (!justification) { setError('La justificación es obligatoria.'); setWorking(false); return; }
+          if (!justification) {
+            setError('La justificación es obligatoria.');
+            setWorking(false);
+            return;
+          }
           await ticketService.rejectTicket(ticketId, {
             justification,
             adminNotes: adminNotes || undefined,
           });
           break;
+
         case 'invalid':
           await ticketService.closeAsInvalid(ticketId);
           break;
       }
+
       await refresh();
       setAction(null);
       setAdminNotes('');
@@ -119,6 +147,7 @@ export default function AdminTicketDetailPage() {
     }
   };
 
+  // ── Estados de carga / error ─────────────────────────────────────────────
   if (loading) return (
     <div className="tk-page" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '60vh' }}>
       <style>{SHARED_STYLES}</style>
@@ -130,27 +159,33 @@ export default function AdminTicketDetailPage() {
     <div className="tk-page" style={{ padding: '32px 20px', textAlign: 'center' }}>
       <style>{SHARED_STYLES}</style>
       <p style={{ color: T.red }}>{error}</p>
-      <Link href="/tickets" className="tk-btn tk-btn-ghost" style={{ marginTop: 16, display: 'inline-flex' }}>← Volver</Link>
+      <Link
+        href="/admin/tickets"
+        className="tk-btn tk-btn-ghost"
+        style={{ marginTop: 16, display: 'inline-flex' }}
+      >
+        ← Volver al listado
+      </Link>
     </div>
   );
 
   const sb = statusBadge(ticket!.status);
   const tb = typeBadge(ticket!.type);
 
+  // ── Render ───────────────────────────────────────────────────────────────
   return (
     <div className="tk-page" style={{ padding: '32px 20px' }}>
       <style>{SHARED_STYLES}</style>
-
       <div style={{ maxWidth: 900, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 20 }}>
 
         {/* Back */}
-        <Link href="/tickets" className="tk-btn tk-btn-ghost tk-f1" style={{ display: 'inline-flex', alignSelf: 'flex-start' }}>
+        <Link href="/admin/tickets" className="tk-btn tk-btn-ghost tk-f1" style={{ display: 'inline-flex', alignSelf: 'flex-start' }}>
           ← Todos los tickets
         </Link>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: 20, alignItems: 'start' }}>
 
-          {/* LEFT COLUMN */}
+          {/* ── LEFT COLUMN ─────────────────────────────────────────────── */}
           <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
 
             {/* Ticket header */}
@@ -220,7 +255,6 @@ export default function AdminTicketDetailPage() {
               <div style={{ padding: '16px 22px', borderBottom: `1px solid ${T.border}` }}>
                 <h2 style={{ fontFamily: T.fontDisplay, fontWeight: 700, fontSize: '1rem' }}>Conversación</h2>
               </div>
-
               <div style={{ padding: '16px 22px', display: 'flex', flexDirection: 'column', gap: 12, maxHeight: 380, overflowY: 'auto' }}>
                 {ticket!.messages.map((msg) => {
                   const isAdmin = msg.senderRole === 'ADMIN';
@@ -245,8 +279,20 @@ export default function AdminTicketDetailPage() {
 
               {!isClosed && (
                 <form onSubmit={handleSendMessage} style={{ padding: '12px 22px', borderTop: `1px solid ${T.border}`, display: 'flex', gap: 10 }}>
-                  <textarea className="tk-input" rows={2} placeholder="Responder al cliente..." value={message} onChange={(e) => setMessage(e.target.value)} style={{ flex: 1 }} />
-                  <button type="submit" className="tk-btn tk-btn-primary" disabled={sending || !message.trim()} style={{ alignSelf: 'flex-end', padding: '9px 16px' }}>
+                  <textarea
+                    className="tk-input"
+                    rows={2}
+                    placeholder="Responder al cliente..."
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    style={{ flex: 1 }}
+                  />
+                  <button
+                    type="submit"
+                    className="tk-btn tk-btn-primary"
+                    disabled={sending || !message.trim()}
+                    style={{ alignSelf: 'flex-end', padding: '9px 16px' }}
+                  >
                     {sending ? <div className="tk-spinner" /> : 'Enviar'}
                   </button>
                 </form>
@@ -254,9 +300,8 @@ export default function AdminTicketDetailPage() {
             </div>
           </div>
 
-          {/* RIGHT COLUMN — Actions */}
+          {/* ── RIGHT COLUMN — Actions ───────────────────────────────────── */}
           <div className="tk-f4" style={{ display: 'flex', flexDirection: 'column', gap: 14, position: 'sticky', top: 24 }}>
-
             <div className="tk-card-flat" style={{ padding: '18px 20px' }}>
               <h2 style={{ fontFamily: T.fontDisplay, fontWeight: 700, fontSize: '1rem', marginBottom: 16 }}>Acciones del admin</h2>
 
@@ -313,7 +358,6 @@ export default function AdminTicketDetailPage() {
                 )}
 
                 <form onSubmit={handleAction} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-
                   {action === 'replacement' && (
                     <div>
                       <label className="tk-label">ID del nuevo stock</label>
@@ -328,21 +372,31 @@ export default function AdminTicketDetailPage() {
                       />
                     </div>
                   )}
-
                   {action === 'reject' && (
                     <div>
                       <label className="tk-label">Justificación para el cliente</label>
-                      <textarea className="tk-input" rows={3} placeholder="Explica por qué se rechaza..." value={justification} onChange={(e) => setJustification(e.target.value)} required />
+                      <textarea
+                        className="tk-input"
+                        rows={3}
+                        placeholder="Explica por qué se rechaza..."
+                        value={justification}
+                        onChange={(e) => setJustification(e.target.value)}
+                        required
+                      />
                     </div>
                   )}
-
                   {action !== 'invalid' && (
                     <div>
                       <label className="tk-label">Notas internas (opcional)</label>
-                      <textarea className="tk-input" rows={2} placeholder="Solo visibles para el equipo..." value={adminNotes} onChange={(e) => setAdminNotes(e.target.value)} />
+                      <textarea
+                        className="tk-input"
+                        rows={2}
+                        placeholder="Solo visibles para el equipo..."
+                        value={adminNotes}
+                        onChange={(e) => setAdminNotes(e.target.value)}
+                      />
                     </div>
                   )}
-
                   <div style={{ display: 'flex', gap: 8 }}>
                     <button
                       type="button"

@@ -220,7 +220,7 @@ export default function ProductsPage() {
             </p>
           </div>
           <div style={{ display: 'flex', gap: 10 }}>
-            <Link href="/dashboard" className="tk-btn tk-btn-ghost" style={{ fontSize: 13 }}>
+            <Link href="/admin/dashboard" className="tk-btn tk-btn-ghost" style={{ fontSize: 13 }}>
               ← Dashboard
             </Link>
             <button
