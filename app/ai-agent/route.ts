@@ -1,7 +1,7 @@
 // app/api/ai-agent/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 
-export const runtime = 'edge'; // optional: faster cold starts
+// export const runtime = 'edge'; // optional: faster cold starts
 
 const GEMINI_MODEL   = 'gemini-2.5-flash';
 const GEMINI_API_URL = `https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent`;
